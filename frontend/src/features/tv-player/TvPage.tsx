@@ -135,7 +135,7 @@ function Player({ getToken, onRevoked, preview, previewId }: { getToken: () => P
     try {
       const c = await authed<Cfg>("/display/config");
       if (preview && previewId) c.playlist = c.playlist.filter((i) => i.dashboard_id === previewId);
-      setCfg(c); setLastOk(Date.now());
+      setCfg(c); setIdx((i) => (i >= c.playlist.length ? 0 : i)); setLastOk(Date.now());
       if (c.frontend_version !== APP_VERSION && APP_VERSION !== "dev" && c.frontend_version !== "dev") location.reload();
     } catch (e) { if (e instanceof ApiError && e.status === 401) onRevoked(); }
   }, [authed, onRevoked, preview, previewId]);

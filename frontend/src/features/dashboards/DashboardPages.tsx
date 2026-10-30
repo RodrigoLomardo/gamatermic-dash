@@ -10,6 +10,7 @@ import type { Widget } from "../widgets/types";
 import { useMedia } from "@/shared/hooks/useMedia";
 import { PRESETS, Filter, PeriodSel, useDashboard, useDashboardData } from "./useDashboardData";
 import { SharePanel } from "../admin/SharePanel";
+import { PublishControl } from "./PublishControl";
 
 export function DashboardsListPage() {
   const { can } = useAuth(); const nav = useNavigate(); const toast = useToasts((s) => s.push);
@@ -35,6 +36,7 @@ export function DashboardsListPage() {
               <span>{d.widget_count} widgets · atualizada {fmtDateTime(d.updated_at)}</span>
               {can("dashboard:create") && <button className="font-semibold text-accent-dark hover:underline" onClick={() => dup(d.id)}>Duplicar</button>}
             </div>
+            <div className="mt-3 border-t border-line pt-3"><PublishControl id={d.id} name={d.name} status={d.status} canEdit={can("dashboard:edit")} compact /></div>
           </Card>
         ))}
       </div>
@@ -99,6 +101,10 @@ export function DashboardViewPage() {
           {can("grant:manage") && <Button variant="secondary" onClick={() => setShare(true)}>Compartilhar</Button>}
           {d.can_edit && <Link to={`/dashboards/${d.id}/editar`}><Button>Editar</Button></Link>}
         </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-panel px-4 py-2">
+        <PublishControl id={d.id} name={d.name} status={d.status} canEdit={d.can_edit} />
+        {d.status !== "published" && <p role="status" className="text-sm text-warn">Fora do ar: só quem edita vê este painel. Lance para liberar aos gestores e às TVs.</p>}
       </div>
       {filters.length > 0 && (
         <div className="flex flex-wrap items-center gap-2" aria-label="Filtros ativos">

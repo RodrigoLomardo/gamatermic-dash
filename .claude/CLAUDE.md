@@ -96,6 +96,7 @@ Monólito modular: API e worker compartilham o mesmo código em `backend/app`.
 - **Autenticação** ([ADR 0006](../docs/adr/0006-autenticacao.md)): access JWT HS256 de 10 min, só em memória no frontend; refresh opaco rotativo em cookie `HttpOnly; SameSite=Strict; Path=/api/v1/auth`, reuso fora da janela de 10 s revoga a família. **Permissões não vão no token**: resolvidas no servidor, cache de 60 s invalidado por `authz_version`. Senha argon2id, mínimo 12 caracteres, lockout de 5 falhas por 15 min.
 - **TV:** pareamento estilo RFC 8628 (`user_code` de 8 caracteres, 10 min, uso único), credencial opaca revogável + JWT `typ=device` de 15 min. TV recebe 401 em rota de usuário.
 - **RBAC com escopo:** permissão global via roles + escopo `all|granted` + `resource_grants` por recurso/setor. Guarda anti-escalonamento e do último Administrador.
+- **Lançamento de painéis** ([ADR 0009](../docs/adr/0009-lancamento-de-paineis.md)): `dashboards.status` `published`/`offline`; fora do ar só editores veem e a TV pula. Link de compartilhamento é interno (login + permissão), nunca público.
 - **Auditoria** `audit_logs` é append-only, gravada na mesma transação da ação, sem segredos no diff.
 - **Migrações:** Alembic, revisão manual do autogenerate, `alembic check` no CI. Migração aplicada em produção é imutável: correção é migração nova.
 - **IDs:** UUID. **Sem `DELETE` de dado de negócio** onde o plano prevê soft delete (`deleted_at`, `status`).

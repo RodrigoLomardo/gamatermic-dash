@@ -32,7 +32,8 @@ async def _playlist_items(session: AsyncSession, playlist_id: uuid.UUID | None):
         return []
     return (await session.execute(
         select(PlaylistItem, Dashboard.name).join(Dashboard, Dashboard.id == PlaylistItem.dashboard_id)
-        .where(PlaylistItem.playlist_id == playlist_id).order_by(PlaylistItem.position))).all()
+        .where(PlaylistItem.playlist_id == playlist_id, Dashboard.status == "published")  # fora do ar: a TV pula
+        .order_by(PlaylistItem.position))).all()
 
 
 async def _device_playlist_id(session: AsyncSession, p: Principal) -> uuid.UUID | None:

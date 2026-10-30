@@ -444,6 +444,10 @@
       "title": "Slug",
       "type": "string"
      },
+     "status": {
+      "title": "Status",
+      "type": "string"
+     },
      "updated_at": {
       "format": "date-time",
       "title": "Updated At",
@@ -465,6 +469,7 @@
      "name",
      "description",
      "sector_id",
+     "status",
      "version",
      "updated_at"
     ],
@@ -2129,6 +2134,19 @@
     "title": "PreviewRequest",
     "type": "object"
    },
+   "PublicationIn": {
+    "properties": {
+     "online": {
+      "title": "Online",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "online"
+    ],
+    "title": "PublicationIn",
+    "type": "object"
+   },
    "RoleCreate": {
     "properties": {
      "description": {
@@ -3750,6 +3768,59 @@
      }
     },
     "summary": "Layout",
+    "tags": [
+     "dashboards"
+    ]
+   }
+  },
+  "/api/v1/dashboards/{did}/publication": {
+   "put": {
+    "operationId": "publication_api_v1_dashboards__did__publication_put",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "did",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Did",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PublicationIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DashboardOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Publication",
     "tags": [
      "dashboards"
     ]

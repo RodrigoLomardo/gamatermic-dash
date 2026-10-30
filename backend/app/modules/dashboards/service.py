@@ -30,8 +30,15 @@ async def _widgets(session: AsyncSession, did: uuid.UUID) -> list[Widget]:
     return list((await session.scalars(select(Widget).where(Widget.dashboard_id == did).order_by(Widget.y, Widget.x))).all())
 
 
+ONLINE = "published"
+OFFLINE = "offline"
+
+
 async def check_view(session: AsyncSession, p: Principal, d: Dashboard) -> None:
     await require_can(session, p, "dashboard:view", "dashboard", d.id, d.sector_id, "view")
+    if d.status != ONLINE and not await can(session, p, "dashboard:edit", "dashboard", d.id, d.sector_id, "edit"):
+        # painel fora do ar: so quem edita enxerga
+        raise Forbidden("Este painel está fora do ar.", code="dashboard_offline")
 
 
 async def list_dashboards(session: AsyncSession, p: Principal) -> list[sc.DashboardSummary]:
@@ -41,6 +48,10 @@ async def list_dashboards(session: AsyncSession, p: Principal) -> list[sc.Dashbo
         if not direct and not sectors:
             return []
         q = q.where(Dashboard.id.in_(direct) | Dashboard.sector_id.in_(sectors))
+    # fora do ar: somente para quem pode editar (filtro na consulta, nao no router)
+    edit_all, edit_direct, edit_sectors = await accessible(session, p, "dashboard:edit", "dashboard", "edit")
+    if not edit_all:
+        q = q.where((Dashboard.status == ONLINE) | Dashboard.id.in_(edit_direct) | Dashboard.sector_id.in_(edit_sectors))
     counts = dict((await session.execute(select(Widget.dashboard_id, func.count()).group_by(Widget.dashboard_id))).all())
     out = []
     for d in (await session.scalars(q)).all():
@@ -68,7 +79,7 @@ async def create(session: AsyncSession, request: Request, p: Principal, body: sc
         await require_can(session, p, "dashboard:create", "sector", body.sector_id, body.sector_id, "edit")
     elif p.scope("dashboard:create") != "all":
         raise Forbidden("Informe um setor em que você pode criar dashboards.")
-    d = Dashboard(**body.model_dump(), created_by=p.id, updated_by=p.id)
+    d = Dashboard(**body.model_dump(), status=OFFLINE, created_by=p.id, updated_by=p.id)  # nasce fora do ar
     session.add(d)
     try:
         await session.flush()
@@ -110,6 +121,19 @@ async def patch(session: AsyncSession, request: Request, p: Principal, did: uuid
     return await dashboard_out(session, p, d)
 
 
+async def set_publication(session: AsyncSession, request: Request, p: Principal, did: uuid.UUID, online: bool) -> sc.DashboardOut:
+    """Lanca (no ar) ou retira (fora do ar) o painel. Efeito imediato nas listas, links e TVs."""
+    d = await _edit_target(session, p, did)
+    new = ONLINE if online else OFFLINE
+    if d.status != new:
+        d.status = new
+        await _touch(session, d, p)
+        await audit.record(session, "dashboard.published" if online else "dashboard.unpublished", request=request, principal=p,
+                           resource_type="dashboard", resource_id=d.id, metadata={"name": d.name})
+        await session.commit()
+    return await dashboard_out(session, p, d)
+
+
 async def delete(session: AsyncSession, request: Request, p: Principal, did: uuid.UUID) -> None:
     d = await get_dash(session, did)
     await require_can(session, p, "dashboard:delete", "dashboard", d.id, d.sector_id, "manage")
@@ -131,7 +155,7 @@ async def duplicate(session: AsyncSession, request: Request, p: Principal, did: 
         n += 1
     d = Dashboard(slug=f"{src.slug}-copia-{n}", name=f"{src.name} (cópia)", description=src.description, sector_id=src.sector_id,
                   refresh_interval_seconds=src.refresh_interval_seconds, default_period=src.default_period,
-                  created_by=p.id, updated_by=p.id)
+                  status=OFFLINE, created_by=p.id, updated_by=p.id)
     session.add(d)
     await session.flush()
     for w in await _widgets(session, src.id):

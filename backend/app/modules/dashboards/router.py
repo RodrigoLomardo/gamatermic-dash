@@ -69,6 +69,11 @@ async def duplicate(did: uuid.UUID, request: Request, p: Principal = Depends(cre
     return await service.duplicate(s, request, p, did)
 
 
+@router.put("/dashboards/{did}/publication", response_model=sc.DashboardOut)
+async def publication(did: uuid.UUID, body: sc.PublicationIn, request: Request, p: Principal = Depends(edit), s: AsyncSession = Depends(get_session)):
+    return await service.set_publication(s, request, p, did, body.online)
+
+
 @router.put("/dashboards/{did}/layout", response_model=sc.DashboardOut)
 async def layout(did: uuid.UUID, body: sc.LayoutPut, request: Request, if_match: str | None = Header(None),
                  p: Principal = Depends(edit), s: AsyncSession = Depends(get_session)):

@@ -85,9 +85,14 @@ class DashboardSummary(BaseModel):
     name: str
     description: str | None
     sector_id: uuid.UUID | None
+    status: str
     version: int
     updated_at: datetime
     widget_count: int = 0
+
+
+class PublicationIn(BaseModel):
+    online: bool
 
 
 class LayoutItem(BaseModel):

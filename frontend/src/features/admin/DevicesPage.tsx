@@ -81,7 +81,7 @@ export function DevicesPage() {
           {items.map((it, i) => (
             <div key={i} className="grid grid-cols-[auto_1fr_6rem_7rem_auto] items-center gap-2">
               <span className="flex flex-col"><button aria-label="Subir" disabled={i === 0} onClick={() => move(i, -1)}>▲</button><button aria-label="Descer" disabled={i === items.length - 1} onClick={() => move(i, 1)}>▼</button></span>
-              <Select aria-label="Dashboard" value={it.dashboard_id} onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, dashboard_id: e.target.value } : x)))}>{dashboards.data?.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</Select>
+              <Select aria-label="Dashboard" value={it.dashboard_id} onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, dashboard_id: e.target.value } : x)))}>{dashboards.data?.map((d) => <option key={d.id} value={d.id}>{d.name}{d.status !== "published" ? " (fora do ar — a TV pula)" : ""}</option>)}</Select>
               <Input aria-label="Duração em segundos" type="number" min={5} value={it.duration_seconds} onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, duration_seconds: Number(e.target.value) } : x)))} />
               <Select aria-label="Transição" value={it.transition ?? "fade"} onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, transition: e.target.value as "fade" } : x)))}><option value="fade">Fade</option><option value="slide">Deslizar</option><option value="none">Nenhuma</option></Select>
               <button aria-label={`Remover ${dname(it.dashboard_id)}`} className="text-danger" onClick={() => setItems(items.filter((_, j) => j !== i))}>✕</button>

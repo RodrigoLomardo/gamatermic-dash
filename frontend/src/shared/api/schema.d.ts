@@ -228,6 +228,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/dashboards/{did}/publication": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Publication */
+        put: operations["publication_api_v1_dashboards__did__publication_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/dashboards/{did}/widgets": {
         parameters: {
             query?: never;
@@ -1331,6 +1348,8 @@ export interface components {
             sector_id: string | null;
             /** Slug */
             slug: string;
+            /** Status */
+            status: string;
             /**
              * Updated At
              * Format: date-time
@@ -1976,6 +1995,11 @@ export interface components {
              * @enum {string}
              */
             type: "kpi" | "line" | "bar" | "pie" | "table" | "gauge";
+        };
+        /** PublicationIn */
+        PublicationIn: {
+            /** Online */
+            online: boolean;
         };
         /** RoleCreate */
         RoleCreate: {
@@ -2749,6 +2773,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["LayoutPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publication_api_v1_dashboards__did__publication_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                did: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicationIn"];
             };
         };
         responses: {
