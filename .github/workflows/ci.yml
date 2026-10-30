@@ -1,0 +1,62 @@
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: gama, POSTGRES_HOST_AUTH_METHOD: trust }
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U gama" --health-interval 5s --health-retries 10
+    defaults: { run: { working-directory: backend } }
+    env:
+      GAMA_TEST_DATABASE_URL: postgresql+asyncpg://gama@localhost:5433/gamatermic_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - run: uv sync --frozen
+      - run: |
+          PGHOST=localhost PGPORT=5433 PGUSER=gama psql postgres -c "create database gamatermic_test"
+      - run: uv run ruff check .
+      - run: uv run mypy app
+      - run: uv run lint-imports
+      - run: uv run pytest -q --maxfail=5
+      - name: Drift de migrations
+        run: ALEMBIC_DATABASE_URL=$GAMA_TEST_DATABASE_URL uv run alembic check
+      - name: OpenAPI sem quebra de contrato
+        run: |
+          uv run python -c "import json;from app.main import app;print(json.dumps(app.openapi(),sort_keys=True,indent=1))" > /tmp/openapi.json
+          diff -q /tmp/openapi.json ../docs/contracts/openapi.snapshot.json || { echo "Contrato mudou: rode scripts/update-openapi-snapshot.sh e revise o diff"; exit 1; }
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Cliente TS em dia com o OpenAPI
+        run: |
+          npx openapi-typescript ../docs/contracts/openapi.snapshot.json -o /tmp/schema.d.ts && diff -q /tmp/schema.d.ts src/shared/api/schema.d.ts
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - run: cd backend && uv export --frozen --no-dev --no-hashes -o /tmp/req.txt && uvx pip-audit -r /tmp/req.txt
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: cd frontend && npm ci && npm audit --omit=dev --audit-level=high
+      - uses: aquasecurity/trivy-action@0.24.0
+        with: { scan-type: fs, scan-ref: ., severity: "HIGH,CRITICAL", exit-code: "1", ignore-unfixed: true }

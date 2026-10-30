@@ -1,0 +1,3 @@
+# ADR 0003 — Fila de jobs em Postgres
+
+Tabela `jobs` + `UPDATE … WHERE id = (SELECT … FOR UPDATE SKIP LOCKED LIMIT 1)`. O job é inserido **na mesma transação** que `uploaded_files` e `ingestion_runs` (ou nascem juntos ou nenhum nasce). Retry com backoff exponencial para erros inesperados (máx. 3 tentativas); falhas de validação não são repetidas. Rotina de housekeeping reenfileira jobs presos (>30 min) e marca runs travadas (>45 min) como falhas. Worker roda como processo (`python -m app.workers.runner`) em produção e dentro da API em desenvolvimento (`GAMA_RUN_WORKER_INPROCESS`). Isolado em `workers/queue.py` para migrar a Procrastinate/Celery sem tocar nos services.

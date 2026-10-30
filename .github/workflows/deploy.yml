@@ -1,0 +1,22 @@
+name: deploy
+on:
+  workflow_dispatch:
+    inputs:
+      ref: { description: "tag/commit a publicar", required: true, default: main }
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "${{ inputs.ref }}" }
+      - name: Deploy por SSH (compose pull/build + migrate antes da API)
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          install -m 600 /dev/null key && printf '%s' "$SSH_KEY" > key
+          ssh -i key -o StrictHostKeyChecking=accept-new "$USER@$HOST" "cd /opt/gamatermic-dash && git fetch --all --tags && git checkout ${{ inputs.ref }} && docker compose -f docker-compose.prod.yml --env-file .env build && docker compose -f docker-compose.prod.yml --env-file .env up -d --remove-orphans && docker compose -f docker-compose.prod.yml ps"
+      - name: Smoke test
+        run: curl -fsS "https://${{ secrets.DEPLOY_DOMAIN }}/api/v1/health/ready"

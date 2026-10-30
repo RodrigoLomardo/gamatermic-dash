@@ -1,0 +1,82 @@
+# PRODUCAO (VPS unica). Uso: docker compose -f docker-compose.prod.yml --env-file .env up -d
+name: gamatermic-dash
+x-app: &app
+  build: ./backend
+  restart: unless-stopped
+  env_file: .env
+  read_only: true
+  tmpfs: [/tmp]
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+  volumes: [uploads:/data/uploads]
+  depends_on:
+    db: { condition: service_healthy }
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      retries: 10
+    # sem portas publicadas: so a rede interna alcanca o banco
+
+  migrate:
+    <<: *app
+    restart: "no"
+    read_only: false
+    command: ["sh", "-c", "alembic upgrade head && python -m app.cli bootstrap"]
+
+  api:
+    <<: *app
+    environment: { GAMA_RUN_WORKER_INPROCESS: "false" }
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  worker:
+    <<: *app
+    command: ["python", "-m", "app.workers.runner"]
+    healthcheck: { disable: true }
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  web:
+    build:
+      context: ./frontend
+      args: { VITE_APP_VERSION: "${GAMA_FRONTEND_VERSION:-0.1.0}" }
+    restart: unless-stopped
+    environment: { SITE_ADDRESS: "${SITE_ADDRESS}" }
+    ports: ["80:80", "443:443"]
+    volumes: [caddy_data:/data, caddy_config:/config]
+    depends_on: [api]
+
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: .env
+    environment: { PGHOST: db, PGUSER: "${POSTGRES_USER}", PGPASSWORD: "${POSTGRES_PASSWORD}", PGDATABASE: "${POSTGRES_DB}" }
+    volumes: [./scripts:/scripts:ro, backups:/backups]
+    entrypoint: ["sh", "-c", "apk add --no-cache openssl rclone >/dev/null && while true; do sh /scripts/backup.sh /backups; sleep 86400; done"]
+    depends_on: { db: { condition: service_healthy } }
+
+  # Monitoramento externo/alertas (opcional): docker compose --profile monitoring up -d
+  uptime-kuma:
+    profiles: [monitoring]
+    image: louislam/uptime-kuma:1
+    restart: unless-stopped
+    volumes: [kuma:/app/data]
+    ports: ["127.0.0.1:3001:3001"]
+
+volumes:
+  pgdata:
+  uploads:
+  backups:
+  caddy_data:
+  caddy_config:
+  kuma:

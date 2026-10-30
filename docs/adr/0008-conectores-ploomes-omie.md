@@ -1,0 +1,3 @@
+# ADR 0008 — Ploomes e Omie (Fase 2) — pendente de spike
+
+Não implementado no MVP. Contrato pronto (`modules/connectors/base.py`: `kind`, `config_schema`, `test_connection`, `fetch`) e provado com `file_upload`. **A confirmar na documentação oficial** antes de codar: autenticação (token/OAuth), paginação, limites de requisição, campos de negócio e disponibilidade de webhooks. Requisitos já definidos: segredos cifrados (`crypto.py`), cursor incremental em `ingestion_runs.cursor_state`, proteção SSRF (allowlist, bloqueio de IPs privados/metadata, sem redirect para rede interna), backoff com `Retry-After`. Como o Ploomes já é a origem do relatório, a primeira entrega da Fase 2 deve ser o pull incremental de Negócios/Propostas.

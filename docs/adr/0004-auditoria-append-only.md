@@ -1,0 +1,3 @@
+# ADR 0004 — Auditoria append-only particionada
+
+`audit_logs` particionada por mês (`PARTITION BY RANGE (occurred_at)`), partições criadas por `ensure_audit_partition()` (migration + worker, 3 meses à frente) e partição `DEFAULT` de segurança. Triggers `BEFORE UPDATE/DELETE/TRUNCATE` bloqueiam alteração (testado). Registros são gravados na mesma transação da ação; falhas de login são confirmadas antes da resposta de erro. Metadados passam por `scrub()` (chaves sensíveis viram `***`). Para o deploy, usar roles distintas (migração × app × leitura) e revogar `UPDATE/DELETE` do role da aplicação (defesa em profundidade).

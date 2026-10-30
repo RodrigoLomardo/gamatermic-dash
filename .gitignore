@@ -1,0 +1,23 @@
+.env
+.env.*
+!.env.example
+.local/
+.venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+node_modules/
+frontend/dist/
+backend/data/
+data/
+backups/
+*.log
+playwright-report/
+test-results/
+.DS_Store
+# dados reais de negocio nao vao para o repositorio
+.cursor/docs/*.xlsx
+.cursor/docs/*.csv
+frontend/e2e/*-snapshots/

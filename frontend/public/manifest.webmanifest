@@ -1,0 +1,2 @@
+{ "name": "Gamatermic Dash", "short_name": "Gama Dash", "start_url": "/tv", "display": "fullscreen", "background_color": "#001426", "theme_color": "#001F3B",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }] }

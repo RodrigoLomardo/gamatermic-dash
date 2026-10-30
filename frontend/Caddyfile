@@ -1,0 +1,36 @@
+# Mesma origem para web e API (reduz superficie de CORS). TLS automatico (Let's Encrypt) quando SITE_ADDRESS e um dominio.
+{$SITE_ADDRESS:localhost} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		-Server
+	}
+
+	@api path /api/*
+	handle @api {
+		# flush_interval -1: nao bufferiza SSE (/api/v1/display/stream)
+		reverse_proxy api:8000 {
+			flush_interval -1
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	# /metrics e /api/docs nao sao expostos publicamente (metricas so na rede interna)
+	@internal path /metrics /api/docs /api/openapi.json
+	respond @internal 404
+
+	handle {
+		root * /srv
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		@shell path / /index.html /sw.js /manifest.webmanifest
+		header @shell Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}

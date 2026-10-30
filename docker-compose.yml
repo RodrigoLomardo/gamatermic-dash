@@ -1,0 +1,16 @@
+# DEV: sobe so o Postgres (API e frontend rodam no host com `make dev`). Para a stack completa use docker-compose.prod.yml.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: gama
+      POSTGRES_PASSWORD: gama
+      POSTGRES_DB: gamatermic
+    ports: ["127.0.0.1:5433:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gama -d gamatermic"]
+      interval: 5s
+      retries: 10
+volumes:
+  pgdata:
