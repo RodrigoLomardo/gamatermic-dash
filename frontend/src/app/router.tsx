@@ -17,6 +17,8 @@ const UsersPage = L(import("@/features/admin/UsersPage"), "UsersPage");
 const RolesPage = L(import("@/features/admin/RolesPage"), "RolesPage");
 const DevicesPage = L(import("@/features/admin/DevicesPage"), "DevicesPage");
 const AuditPage = L(import("@/features/admin/AuditPage"), "AuditPage");
+const SettingsPage = L(import("@/features/settings/SettingsPage"), "SettingsPage");
+const AiCreatePage = L(import("@/features/ai-dashboards/AiCreatePage"), "AiCreatePage");
 const TvPage = L(import("@/features/tv-player/TvPage"), "TvPage");
 
 const S = ({ children }: { children: JSX.Element }) => <Suspense fallback={<Spinner />}>{children}</Suspense>;
@@ -41,6 +43,8 @@ function Oops() {
 export const router = createBrowserRouter([
   // player de TV: sem login de usuario (credencial de dispositivo); preview exige usuario
   { path: "/tv", errorElement: <Oops />, element: <S><TvPage /></S> },
+  // link de visualizacao: mesma tela da TV, so o painel (sem menu). Pede login e volta direto para ca.
+  { path: "/tv/painel/:id", errorElement: <Oops />, element: <Boot><RequireAuth perm="dashboard:view"><S><TvPage preview /></S></RequireAuth></Boot> },
   { path: "/tv/preview/:id", element: <Boot><RequireAuth perm="dashboard:view"><S><TvPage preview /></S></RequireAuth></Boot> },
   {
     path: "/",
@@ -55,6 +59,7 @@ export const router = createBrowserRouter([
           { path: "trocar-senha", element: <ChangePasswordPage /> },
           { path: "dashboards", element: guard(<DashboardsListPage />, "dashboard:view") },
           { path: "dashboards/nova", element: guard(<NewDashboardPage />, "dashboard:create") },
+          { path: "dashboards/nova/ia", element: guard(<AiCreatePage />, "dashboard:create") },
           { path: "dashboards/:id", element: guard(<DashboardViewPage />, "dashboard:view") },
           { path: "dashboards/:id/editar", element: guard(<EditorPage />, "dashboard:edit") },
           { path: "datasets", element: guard(<DatasetsPage />, "dataset:view") },
@@ -64,6 +69,7 @@ export const router = createBrowserRouter([
           { path: "admin/users", element: guard(<UsersPage />, "user:manage") },
           { path: "admin/roles", element: guard(<RolesPage />, "role:manage") },
           { path: "admin/audit", element: guard(<AuditPage />, "audit:view") },
+          { path: "configuracoes", element: guard(<SettingsPage />, "settings:manage") },
           { path: "*", element: <div className="p-8 text-center text-ink-soft">Página não encontrada.</div> },
         ],
       },

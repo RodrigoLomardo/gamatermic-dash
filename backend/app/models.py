@@ -32,3 +32,4 @@ from app.modules.iam.models import (  # noqa: F401
     UserGroup,
     UserRole,
 )
+from app.modules.settings.models import SystemSetting  # noqa: F401

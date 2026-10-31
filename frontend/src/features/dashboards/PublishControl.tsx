@@ -4,6 +4,8 @@ import { S, put } from "@/shared/api/http";
 import { Badge, Button, Modal, useToasts } from "@/shared/ui/ui";
 
 export const dashboardLink = (id: string) => `${window.location.origin}/dashboards/${id}`;
+/** Link de visualizacao: abre direto na tela de TV (so o painel), apos o login. */
+export const viewLink = (id: string) => `${window.location.origin}/tv/painel/${id}`;
 
 export async function copyText(text: string): Promise<boolean> {
   try { await navigator.clipboard.writeText(text); return true; }
@@ -30,14 +32,15 @@ export function PublishControl({ id, name, status, canEdit, compact = false }: {
       setConfirm(false);
     } catch (e) { toast((e as Error).message, "danger"); } finally { setBusy(false); }
   };
-  const copy = async () => toast((await copyText(dashboardLink(id))) ? "Link copiado." : "Não foi possível copiar; copie manualmente.", "ok");
+  const copy = async (url: string, what: string) => toast((await copyText(url)) ? `${what} copiado.` : "Não foi possível copiar; copie manualmente.", "ok");
   return (
     <div className="flex flex-wrap items-center gap-2">
       <StatusBadge status={status} />
       {canEdit && (online
         ? <Button size="sm" variant="secondary" onClick={() => setConfirm(true)}>Tirar do ar</Button>
         : <Button size="sm" disabled={busy} onClick={() => apply(true)}>Lançar (colocar no ar)</Button>)}
-      {online && <Button size="sm" variant="secondary" onClick={copy} aria-label={`Copiar link de ${name}`}>{compact ? "Copiar link" : "Copiar link do painel"}</Button>}
+      {online && <Button size="sm" variant="secondary" onClick={() => copy(dashboardLink(id), "Link do painel")} aria-label={`Copiar link de ${name}`}>{compact ? "Link do painel" : "Copiar link do painel"}</Button>}
+      {online && <Button size="sm" variant="secondary" onClick={() => copy(viewLink(id), "Link de visualização")} aria-label={`Copiar link de visualização de ${name}`}>{compact ? "Link de visualização" : "Copiar link de visualização (TV)"}</Button>}
       <Modal open={confirm} title="Tirar o painel do ar?" onClose={() => setConfirm(false)}>
         <p className="mb-4 text-sm text-ink-soft">“{name}” some das listas dos gestores, o link deixa de funcionar para quem não edita e as TVs que o exibem passam a pular este painel. Quem edita continua vendo.</p>
         <div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setConfirm(false)}>Cancelar</Button><Button variant="danger" disabled={busy} onClick={() => apply(false)}>Tirar do ar</Button></div>

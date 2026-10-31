@@ -18,6 +18,7 @@ PERMISSIONS: dict[str, str] = {
     "group:manage": "Gerenciar grupos",
     "grant:manage": "Gerenciar concessões por recurso",
     "audit:view": "Consultar auditoria",
+    "settings:manage": "Gerenciar configurações do sistema (IA)",
 }
 
 ALL = {p: "all" for p in PERMISSIONS}

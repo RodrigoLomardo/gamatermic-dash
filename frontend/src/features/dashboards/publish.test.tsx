@@ -28,6 +28,8 @@ describe("PublishControl", () => {
     wrap(<PublishControl id="d1" name="Vendas" status="published" canEdit />);
     await userEvent.click(screen.getByRole("button", { name: /Copiar link de Vendas/ }));
     expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/dashboards/d1`);
+    await userEvent.click(screen.getByRole("button", { name: /Copiar link de visualização de Vendas/ }));
+    expect(writeText).toHaveBeenLastCalledWith(`${window.location.origin}/tv/painel/d1`);
     await userEvent.click(screen.getByRole("button", { name: "Tirar do ar" }));
     expect(fetchMock).not.toHaveBeenCalled(); // so confirma no modal
     await userEvent.click(screen.getAllByRole("button", { name: "Tirar do ar" }).at(-1)!);

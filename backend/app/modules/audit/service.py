@@ -10,7 +10,7 @@ from app.core.authz.policy import Principal
 from app.core.rate_limit import client_ip
 from app.modules.audit.models import AuditLog
 
-SENSITIVE_KEYS = {"password", "password_hash", "token", "secret", "refresh_token", "device_code", "temp_password"}
+SENSITIVE_KEYS = {"password", "password_hash", "token", "secret", "refresh_token", "device_code", "temp_password", "api_key"}
 
 
 def scrub(meta: Any) -> Any:

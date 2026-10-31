@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     run_worker_inprocess: bool = True
     frontend_version: str = "dev"
     docs_enabled: bool = True
+    # IA (ADR 0010): host fixo da Groq; so muda para apontar o E2E a um servidor falso
+    groq_base_url: str = "https://api.groq.com/openai/v1"
+    ai_timeout_seconds: float = 45.0
 
     @property
     def is_prod(self) -> bool:

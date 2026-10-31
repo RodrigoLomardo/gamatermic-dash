@@ -34,7 +34,7 @@ test("TV offline mantém o último dado visível", async ({ browser }) => {
   await page.goto("/dashboards");
   await page.getByRole("link", { name: /Vendas/ }).first().click();
   const id = page.url().split("/").pop()!;
-  await page.goto(`/tv/preview/${id}`);
+  await page.goto(`/tv/painel/${id}`);
   await expect(page.getByText("Faturamento no mês")).toBeVisible();
   await ctx.setOffline(true);
   await expect(page.getByText("Faturamento no mês")).toBeVisible(); // último dado permanece
@@ -46,7 +46,24 @@ test("visual da TV em 1920x1080", async ({ browser }) => {
   await page.goto("/dashboards");
   await page.getByRole("link", { name: /Vendas/ }).first().click();
   const id = page.url().split("/").pop()!;
-  await page.goto(`/tv/preview/${id}`);
+  await page.goto(`/tv/painel/${id}`);
   await page.waitForTimeout(2500);
   await expect(page).toHaveScreenshot("tv-1080.png", { maxDiffPixelRatio: 0.08 });
+});
+
+test("link de visualização: sem sessão pede login e cai direto na tela de TV", async ({ browser }) => {
+  const ctx = await browser.newContext(); const page = await ctx.newPage();
+  await login(page);
+  await page.goto("/dashboards");
+  await page.getByRole("link", { name: /Vendas/ }).first().click();
+  const id = page.url().split("/").pop()!;
+  const anon = await (await browser.newContext()).newPage(); // sem cookies: simula a TV recem-aberta
+  await anon.goto(`/tv/painel/${id}`);
+  await expect(anon).toHaveURL(/\/login/);
+  await anon.getByLabel("E-mail").fill(ADMIN.email);
+  await anon.getByLabel("Senha").fill(ADMIN.password);
+  await anon.getByRole("button", { name: "Entrar" }).click();
+  await expect(anon).toHaveURL(new RegExp(`/tv/painel/${id}`));
+  await expect(anon.getByText("Faturamento no mês")).toBeVisible();
+  await expect(anon.getByRole("navigation", { name: "Principal" })).toHaveCount(0); // sem menu do sistema
 });

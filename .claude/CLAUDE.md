@@ -40,6 +40,11 @@ Dados reais: `Vendas Ploomes 2025_2026.xlsx` (em `.cursor/docs/`, **não version
 tem contratos nem metas: dashboards atuais são *Vendas – Visão Geral* e *Propostas – Funil
 Comercial*, e a meta do gauge é um placeholder editável (R$ 4 mi/mês).
 
+**Assistente de IA (Groq) e aba Configurações implementados em 30/10/2026** ([ADR 0010](../docs/adr/0010-ia-geracao-de-dashboards.md),
+plano em `docs/planos/GAMA-FEAT-IA-DASHBOARDS.md`): `modules/settings` (chave cifrada, somente escrita, `settings:manage`)
+e `modules/ai` (prompt só com metadados não-`pii`, saída JSON estrita, tradução para `QuerySpec` validado). Testes usam
+Groq falsa (`httpx.MockTransport`, `frontend/e2e/fake-groq.mjs`); qualidade com a conta real ainda não medida.
+
 **Pendentes que dependem de terceiros:**
 
 - Spike B no hardware real da TV (24 h, rede da empresa).

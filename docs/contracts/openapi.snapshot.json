@@ -1,6 +1,189 @@
 {
  "components": {
   "schemas": {
+   "AiModelOption": {
+    "properties": {
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "label"
+    ],
+    "title": "AiModelOption",
+    "type": "object"
+   },
+   "AiSettingsIn": {
+    "properties": {
+     "api_key": {
+      "anyOf": [
+       {
+        "maxLength": 300,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Api Key"
+     },
+     "enabled": {
+      "title": "Enabled",
+      "type": "boolean"
+     },
+     "model": {
+      "title": "Model",
+      "type": "string"
+     }
+    },
+    "required": [
+     "enabled",
+     "model"
+    ],
+    "title": "AiSettingsIn",
+    "type": "object"
+   },
+   "AiSettingsOut": {
+    "properties": {
+     "api_key": {
+      "$ref": "#/components/schemas/ApiKeyState"
+     },
+     "enabled": {
+      "title": "Enabled",
+      "type": "boolean"
+     },
+     "model": {
+      "title": "Model",
+      "type": "string"
+     },
+     "models": {
+      "items": {
+       "$ref": "#/components/schemas/AiModelOption"
+      },
+      "title": "Models",
+      "type": "array"
+     },
+     "updated_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Updated At"
+     }
+    },
+    "required": [
+     "enabled",
+     "model",
+     "api_key",
+     "models"
+    ],
+    "title": "AiSettingsOut",
+    "type": "object"
+   },
+   "AiStatusOut": {
+    "properties": {
+     "available": {
+      "title": "Available",
+      "type": "boolean"
+     },
+     "model": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Model"
+     }
+    },
+    "required": [
+     "available"
+    ],
+    "title": "AiStatusOut",
+    "type": "object"
+   },
+   "AiTestOut": {
+    "properties": {
+     "error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error"
+     },
+     "latency_ms": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Latency Ms"
+     },
+     "model": {
+      "title": "Model",
+      "type": "string"
+     },
+     "model_available": {
+      "default": false,
+      "title": "Model Available",
+      "type": "boolean"
+     },
+     "ok": {
+      "title": "Ok",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "ok",
+     "model"
+    ],
+    "title": "AiTestOut",
+    "type": "object"
+   },
+   "ApiKeyState": {
+    "properties": {
+     "configured": {
+      "title": "Configured",
+      "type": "boolean"
+     },
+     "last4": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last4"
+     }
+    },
+    "required": [
+     "configured"
+    ],
+    "title": "ApiKeyState",
+    "type": "object"
+   },
    "ApproveIn": {
     "properties": {
      "location": {
@@ -1066,6 +1249,24 @@
      "expires_in"
     ],
     "title": "DeviceTokenOut",
+    "type": "object"
+   },
+   "Discarded": {
+    "properties": {
+     "reason": {
+      "title": "Reason",
+      "type": "string"
+     },
+     "title": {
+      "title": "Title",
+      "type": "string"
+     }
+    },
+    "required": [
+     "title",
+     "reason"
+    ],
+    "title": "Discarded",
     "type": "object"
    },
    "FieldIn": {
@@ -2134,6 +2335,180 @@
     "title": "PreviewRequest",
     "type": "object"
    },
+   "Proposal": {
+    "properties": {
+     "dataset_id": {
+      "format": "uuid",
+      "title": "Dataset Id",
+      "type": "string"
+     },
+     "follows_global_period": {
+      "title": "Follows Global Period",
+      "type": "boolean"
+     },
+     "h": {
+      "title": "H",
+      "type": "integer"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "preview": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Preview"
+     },
+     "query_config": {
+      "additionalProperties": true,
+      "title": "Query Config",
+      "type": "object"
+     },
+     "rationale": {
+      "title": "Rationale",
+      "type": "string"
+     },
+     "title": {
+      "title": "Title",
+      "type": "string"
+     },
+     "type": {
+      "enum": [
+       "kpi",
+       "line",
+       "bar",
+       "pie",
+       "table",
+       "gauge"
+      ],
+      "title": "Type",
+      "type": "string"
+     },
+     "viz_config": {
+      "additionalProperties": true,
+      "title": "Viz Config",
+      "type": "object"
+     },
+     "w": {
+      "title": "W",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "type",
+     "title",
+     "rationale",
+     "dataset_id",
+     "query_config",
+     "viz_config",
+     "follows_global_period",
+     "w",
+     "h"
+    ],
+    "title": "Proposal",
+    "type": "object"
+   },
+   "ProposalsIn": {
+    "properties": {
+     "dashboard_id": {
+      "anyOf": [
+       {
+        "format": "uuid",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Dashboard Id"
+     },
+     "dataset_id": {
+      "format": "uuid",
+      "title": "Dataset Id",
+      "type": "string"
+     },
+     "default_period": {
+      "default": "last_12_months",
+      "enum": [
+       "today",
+       "yesterday",
+       "this_week",
+       "last_7_days",
+       "last_30_days",
+       "last_90_days",
+       "this_month",
+       "last_month",
+       "this_quarter",
+       "this_year",
+       "last_year",
+       "last_12_months",
+       "all"
+      ],
+      "title": "Default Period",
+      "type": "string"
+     },
+     "max_proposals": {
+      "default": 6,
+      "maximum": 8.0,
+      "minimum": 1.0,
+      "title": "Max Proposals",
+      "type": "integer"
+     },
+     "prompt": {
+      "maxLength": 1000,
+      "minLength": 3,
+      "title": "Prompt",
+      "type": "string"
+     }
+    },
+    "required": [
+     "dataset_id",
+     "prompt"
+    ],
+    "title": "ProposalsIn",
+    "type": "object"
+   },
+   "ProposalsOut": {
+    "properties": {
+     "discarded": {
+      "items": {
+       "$ref": "#/components/schemas/Discarded"
+      },
+      "title": "Discarded",
+      "type": "array"
+     },
+     "explanation": {
+      "title": "Explanation",
+      "type": "string"
+     },
+     "proposals": {
+      "items": {
+       "$ref": "#/components/schemas/Proposal"
+      },
+      "title": "Proposals",
+      "type": "array"
+     },
+     "usage": {
+      "$ref": "#/components/schemas/Usage"
+     }
+    },
+    "required": [
+     "explanation",
+     "proposals",
+     "discarded",
+     "usage"
+    ],
+    "title": "ProposalsOut",
+    "type": "object"
+   },
    "PublicationIn": {
     "properties": {
      "online": {
@@ -2549,6 +2924,29 @@
      "user"
     ],
     "title": "TokenOut",
+    "type": "object"
+   },
+   "Usage": {
+    "properties": {
+     "completion_tokens": {
+      "default": 0,
+      "title": "Completion Tokens",
+      "type": "integer"
+     },
+     "model": {
+      "title": "Model",
+      "type": "string"
+     },
+     "prompt_tokens": {
+      "default": 0,
+      "title": "Prompt Tokens",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "model"
+    ],
+    "title": "Usage",
     "type": "object"
    },
    "UserCreate": {
@@ -2998,6 +3396,68 @@
  },
  "openapi": "3.1.0",
  "paths": {
+  "/api/v1/ai/dashboard-proposals": {
+   "post": {
+    "operationId": "proposals_api_v1_ai_dashboard_proposals_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProposalsIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProposalsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Proposals",
+    "tags": [
+     "ai"
+    ]
+   }
+  },
+  "/api/v1/ai/status": {
+   "get": {
+    "operationId": "status_api_v1_ai_status_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AiStatusOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Status",
+    "tags": [
+     "ai"
+    ]
+   }
+  },
   "/api/v1/audit-logs": {
    "get": {
     "operationId": "list_logs_api_v1_audit_logs_get",
@@ -6365,6 +6825,87 @@
     "summary": "Create Sector",
     "tags": [
      "iam"
+    ]
+   }
+  },
+  "/api/v1/settings/ai": {
+   "get": {
+    "operationId": "get_ai_api_v1_settings_ai_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AiSettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Get Ai",
+    "tags": [
+     "settings"
+    ]
+   },
+   "put": {
+    "operationId": "put_ai_api_v1_settings_ai_put",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AiSettingsIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AiSettingsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Put Ai",
+    "tags": [
+     "settings"
+    ]
+   }
+  },
+  "/api/v1/settings/ai/test": {
+   "post": {
+    "operationId": "test_ai_api_v1_settings_ai_test_post",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AiTestOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Test Ai",
+    "tags": [
+     "settings"
     ]
    }
   },

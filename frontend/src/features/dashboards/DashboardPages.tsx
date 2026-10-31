@@ -20,7 +20,12 @@ export function DashboardsListPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">Dashboards</h1>
-        {can("dashboard:create") && <Link to="/dashboards/nova"><Button>Nova dashboard</Button></Link>}
+        {can("dashboard:create") && (
+          <div className="flex gap-2">
+            {can("dataset:query") && <Link to="/dashboards/nova/ia"><Button variant="secondary">Criar com IA</Button></Link>}
+            <Link to="/dashboards/nova"><Button>Nova dashboard</Button></Link>
+          </div>
+        )}
       </div>
       {q.isLoading && <Spinner />}
       {q.error && <ErrorBox error={q.error} onRetry={() => q.refetch()} />}
@@ -97,7 +102,7 @@ export function DashboardViewPage() {
           <Select id="period" className="w-48" value={preset ?? d.default_period} onChange={(e) => setPreset(e.target.value)}>
             {PRESETS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
           </Select>
-          <Link to={`/tv/preview/${d.id}`}><Button variant="secondary">Preview TV</Button></Link>
+          <Link to={`/tv/painel/${d.id}`}><Button variant="secondary">Abrir visualização (TV)</Button></Link>
           {can("grant:manage") && <Button variant="secondary" onClick={() => setShare(true)}>Compartilhar</Button>}
           {d.can_edit && <Link to={`/dashboards/${d.id}/editar`}><Button>Editar</Button></Link>}
         </div>

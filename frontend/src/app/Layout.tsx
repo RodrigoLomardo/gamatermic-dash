@@ -11,6 +11,7 @@ const NAV: Item[] = [
   { to: "/admin/users", label: "Usuários", perm: "user:manage" },
   { to: "/admin/roles", label: "Perfis e grupos", any: ["role:manage", "group:manage"] },
   { to: "/admin/audit", label: "Auditoria", perm: "audit:view" },
+  { to: "/configuracoes", label: "Configurações", perm: "settings:manage" },
 ];
 
 export function Layout() {

@@ -9,3 +9,7 @@ Status: aceito · Data: 30/10/2026
 - Dashboards **novas e duplicadas nascem fora do ar**; as semeadas (`bootstrap`) nascem no ar. Mudar o painel (editor) não o tira do ar.
 - **Link de compartilhamento = link interno** (`/dashboards/{id}`): exige login e permissão (autorização no backend, princípios 1 e 6). Quem não tem concessão recebe 403. **Não há link público por token** — exigiria novo ADR por expor dados a quem tiver a URL.
 - Playlists podem conter painéis fora do ar (a UI avisa que a TV pula).
+
+## Link de visualização (`/tv/painel/{id}`)
+
+Além do link do painel (`/dashboards/{id}`), cada painel no ar tem um **link de visualização**: a mesma tela do modo TV (sem menu nem navegação do sistema), para abrir direto no navegador de uma TV/monitor. Sem sessão, redireciona ao login e volta para o link; a sessão persiste pelo refresh (7 dias de inatividade) e o stream SSE renova o token sozinho. Autorização idêntica ao painel (login + `dashboard:view` + concessão; fora do ar só para editores). `/tv/preview/{id}` continua como alias. Para TV sem teclado, o caminho recomendado segue sendo o pareamento (`/tv`), que não usa senha de usuário.

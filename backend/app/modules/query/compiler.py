@@ -1,4 +1,5 @@
 """Compila QuerySpec -> SQLAlchemy Core. Nomes de campo so entram via lista branca (dataset_fields)."""
+import operator
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -63,6 +64,9 @@ def _coerce_value(f: FieldMeta, v):
     return out
 
 
+_CMP = {"eq": operator.eq, "neq": operator.ne, "gt": operator.gt, "gte": operator.ge, "lt": operator.lt, "lte": operator.le}
+
+
 def _filter_clause(flt: Filter, fields: dict[str, FieldMeta]) -> ColumnElement:
     f = fields.get(flt.field)
     if f is None:
@@ -85,7 +89,8 @@ def _filter_clause(flt: Filter, fields: dict[str, FieldMeta]) -> ColumnElement:
     if v is None and op in ("eq", "neq"):
         return c.is_(None) if op == "eq" else c.is_not(None)
     val = _coerce_value(f, v)
-    return {"eq": c == val, "neq": c != val, "gt": c > val, "gte": c >= val, "lt": c < val, "lte": c <= val}[op]
+    # so monta a comparacao pedida: montar todas de uma vez quebra em booleano (SQLAlchemy recusa `> True`)
+    return _CMP[op](c, val)
 
 
 def validate_spec(spec: QuerySpec, fields: dict[str, FieldMeta], time_field: str | None, *, raw_mode_ok: bool) -> None:

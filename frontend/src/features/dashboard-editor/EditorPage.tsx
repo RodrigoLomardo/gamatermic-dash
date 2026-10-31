@@ -1,12 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import GridLayout, { Layout, WidthProvider } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "@/app/auth";
 import { ApiError, S, del, get, patch, post, put } from "@/shared/api/http";
 import { Badge, Button, Card, ErrorBox, Field, Input, Modal, Select, Spinner, useToasts } from "@/shared/ui/ui";
 import { PRESETS, useDashboardData } from "../dashboards/useDashboardData";
+import { AiWidgetsPanel } from "../ai-dashboards/AiWidgetsPanel";
 import { WidgetCard } from "../widgets/WidgetCard";
 import type { Widget } from "../widgets/types";
 import { Draft, WidgetConfigForm, blankDraft } from "./WidgetConfig";
@@ -29,6 +31,7 @@ export function NewDashboardPage() {
       <Field label="Nome">{(id) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
       <Field label="Setor">{(id) => <Select id={id} value={sector} onChange={(e) => setSector(e.target.value)}><option value="">—</option>{sectors.data?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select>}</Field>
       <Button disabled={name.length < 2} onClick={create}>Criar e editar</Button>
+      <p className="border-t border-line pt-3 text-sm text-ink-soft">Prefere partir de sugestões? <Link to="/dashboards/nova/ia" className="font-semibold text-accent-dark underline">Criar com IA</Link></p>
     </div></Card></div>
   );
 }
@@ -45,6 +48,9 @@ export function EditorPage() {
   const [dirtyLayout, setDirty] = useState(false);
   const layoutRef = useRef<Layout[]>([]);
   const [meta, setMeta] = useState<{ name: string; period: string; refresh: number } | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
+  const closeAi = useCallback(() => setAiOpen(false), []); // estavel: o Modal refoca a cada troca de onClose
+  const canAi = useAuth((s) => s.can)("dataset:query");
   const data = useDashboardData(id, null, [], 60);
   const results = useMemo(() => Object.fromEntries((data.data?.widgets ?? []).map((r) => [r.widget_id, r])), [data.data]);
 
@@ -82,6 +88,7 @@ export function EditorPage() {
         <div><Link to={`/dashboards/${id}`} className="text-sm text-ink-mute hover:underline">← Voltar à visualização</Link><h1 className="text-2xl font-bold">Editor — {dash.data!.name}</h1></div>
         <div className="flex items-center gap-2">
           <Badge tone="neutral">versão {version}</Badge>
+          {canAi && <Button variant="secondary" onClick={() => setAiOpen(true)}>Gráficos com IA</Button>}
           <Button variant="secondary" onClick={startNew}>+ Widget</Button>
           <Button onClick={saveLayout} disabled={!dirtyLayout}>Salvar layout</Button>
         </div>
@@ -114,6 +121,11 @@ export function EditorPage() {
       </RGL>
       <Modal open={!!draft} wide title={selected === "new" ? "Novo widget" : "Editar widget"} onClose={() => { setSelected(null); setDraft(null); }}>
         {draft && <WidgetConfigForm draft={draft} onChange={setDraft} onApply={saveWidget} applyLabel="Salvar widget" />}
+      </Modal>
+      <Modal open={aiOpen} wide title="Gráficos com IA" onClose={closeAi}>
+        <AiWidgetsPanel dashboardId={id!} widgets={widgets} version={version} defaultPeriod={meta.period} datasets={datasets.data ?? []}
+          onAdded={(d, n) => { apply(d); setAiOpen(false); toast(`${n} gráfico(s) adicionado(s) ao painel.`); }}
+          onConflict={() => { setAiOpen(false); setConflict(true); }} />
       </Modal>
       <Modal open={conflict} title="Conflito de edição" onClose={() => setConflict(false)}>
         <p className="mb-4 text-sm">Esta dashboard foi alterada por outra pessoa enquanto você editava. Recarregue para ver a versão atual (suas mudanças não salvas serão descartadas).</p>

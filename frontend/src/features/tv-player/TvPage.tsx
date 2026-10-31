@@ -3,7 +3,7 @@ import QRCode from "qrcode";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTheme } from "@/app/theme";
-import { ApiError, S, api, getAccessToken, setAccessToken } from "@/shared/api/http";
+import { ApiError, S, api, getFreshAccessToken, setAccessToken } from "@/shared/api/http";
 import { fmtTime } from "@/shared/lib/format";
 import { Logo, cx } from "@/shared/ui/ui";
 import { WidgetCard } from "../widgets/WidgetCard";
@@ -202,7 +202,7 @@ function Player({ getToken, onRevoked, preview, previewId }: { getToken: () => P
           const tok = await getToken();
           await fetchEventSource("/api/v1/display/stream", {
             signal: ac.signal, openWhenHidden: true,
-            headers: { Authorization: `Bearer ${preview ? getAccessToken() ?? "" : tok}`, "X-Requested-With": "gamatermic" },
+            headers: { Authorization: `Bearer ${preview ? (await getFreshAccessToken()) ?? "" : tok}`, "X-Requested-With": "gamatermic" },
             onopen: async (r) => { if (!r.ok) throw new ApiError(r.status, "sse", "SSE recusado"); sseUp.current = true; attempt = 0; },
             onmessage: (ev) => {
               setLastOk(Date.now());

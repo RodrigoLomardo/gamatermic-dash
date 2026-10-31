@@ -150,3 +150,18 @@ async def test_pii_masked_in_raw_table_for_non_managers(client, admin):
     assert all(row["cliente"] != "•••" for row in r.json()["data"])
     prev = (await client.get(f"{API}/datasets/{ds['id']}/preview", headers=h)).json()
     assert all(row["cliente"] == "•••" for row in prev["rows"])
+
+
+async def test_boolean_filter_like_last_revision(client, admin):
+    # regressao: montar todas as comparacoes de uma vez quebrava em booleano (`> True`) e derrubava os widgets de propostas
+    fields = [{"name": "codigo", "label": "Código", "data_type": "integer", "is_key": True, "source_column": "Código"},
+              {"name": "ultima", "label": "Última", "data_type": "boolean", "source_column": "Última"},
+              {"name": "valor", "label": "Valor", "data_type": "decimal", "role": "measure", "source_column": "Valor"}]
+    r = await client.post(f"{API}/datasets", headers=admin, json={"slug": "revisoes", "name": "Revisões", "fields": fields})
+    assert r.status_code == 201, r.text
+    ds = r.json()
+    await upload_and_run(client, admin, ds["id"], "Código;Última;Valor\n1;Sim;10,00\n2;Não;5,00\n3;Sim;1,00\n".encode())
+    qc = {"measures": [{"agg": "count", "alias": "n"}], "filters": [{"field": "ultima", "op": "eq", "value": True}]}
+    r = await client.post(f"{API}/query/preview", headers=admin, json=body(ds, qc, "kpi"))
+    assert r.status_code == 200, r.text
+    assert r.json()["data"] == [{"n": 2}]

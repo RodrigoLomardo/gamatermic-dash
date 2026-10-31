@@ -16,6 +16,17 @@ let onTokenRefreshed: (t: S["TokenOut"]) => void = () => {};
 
 export const setAccessToken = (t: string | null) => { accessToken = t; };
 export const getAccessToken = () => accessToken;
+
+/** Access token valido: renova (single-flight) se faltar menos de 60 s para expirar. Para conexoes longas (SSE do modo visualizacao). */
+export async function getFreshAccessToken(): Promise<string | null> {
+  if (accessToken) {
+    try {
+      const exp = JSON.parse(atob(accessToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).exp as number;
+      if (exp * 1000 - Date.now() > 60_000) return accessToken;
+    } catch { /* token ilegivel: renova */ }
+  }
+  return refreshSession();
+}
 export const setAuthHandlers = (lost: () => void, refreshed: (t: S["TokenOut"]) => void) => { onAuthLost = lost; onTokenRefreshed = refreshed; };
 
 async function toError(res: Response): Promise<ApiError> {

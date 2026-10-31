@@ -1,6 +1,9 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "frontend", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "frontend", "run", "dev", "--", "--host", "127.0.0.1"], "port": 5173 }
+    { "name": "frontend", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "frontend", "run", "dev", "--", "--host", "127.0.0.1"], "port": 5173 },
+    { "name": "fake-groq", "runtimeExecutable": "node", "runtimeArgs": ["frontend/e2e/fake-groq.mjs"], "port": 8765 },
+    { "name": "api-e2e", "runtimeExecutable": "env", "runtimeArgs": ["GAMA_DATABASE_URL=postgresql+asyncpg://gama@localhost:5433/gamatermic_e2e", "GAMA_GROQ_BASE_URL=http://127.0.0.1:8765/openai/v1", "uv", "--directory", "backend", "run", "uvicorn", "app.main:app", "--port", "8001"], "port": 8001 },
+    { "name": "web-e2e", "runtimeExecutable": "env", "runtimeArgs": ["VITE_API_TARGET=http://localhost:8001", "npm", "--prefix", "frontend", "run", "dev", "--", "--host", "127.0.0.1", "--port", "5174", "--strictPort"], "port": 5174 }
   ]
 }
