@@ -27,7 +27,7 @@ make test    # backend (pytest + Postgres real) e frontend (vitest)
 make lint    # ruff, mypy, import-linter, eslint, tsc
 ```
 
-Backend: 122 testes (auth, RBAC, auditoria, ingestão, query engine, dispositivos, migrações, configurações e IA com Groq falsa). Os testes usam o banco `gamatermic_test` e recriam o schema a cada execução.
+Backend: 126 testes (auth, RBAC, auditoria, ingestão, query engine, dispositivos, migrações, configurações e IA com Groq falsa). Os testes usam o banco `gamatermic_test` e recriam o schema a cada execução.
 
 ## Assistente de IA (Groq)
 
@@ -36,7 +36,9 @@ Gera sugestões de gráficos a partir de um pedido em texto ([ADR 0010](docs/adr
 1. Crie a chave em [console.groq.com/keys](https://console.groq.com/keys) (de preferência ative *Zero Data Retention* em *Data Controls*).
 2. No sistema, como Administrador: **Configurações → IA (Groq)**, cole a chave, escolha o modelo, marque *IA ativa*, **Salvar** e **Testar conexão**. A chave fica cifrada (Fernet) e nunca é exibida de volta.
 3. Quem cria dashboards usa **Dashboards → Criar com IA**: escolhe um dataset (ou anexa CSV/XLSX, que vira dataset novo), descreve o que quer ver e marca os gráficos que quer usar. O painel nasce fora do ar.
-4. Para completar um painel existente: no editor, **Gráficos com IA** usa o dataset do painel, não repete gráficos que já existem e acrescenta os escolhidos abaixo dos atuais.
+4. Para completar um painel existente: no editor, **Gráficos com IA** usa o dataset do painel, não repete gráficos, sugere onde encaixar cada um e, se precisar, mudanças nos existentes (com prévia do layout); você marca o que aceitar.
+
+No editor, os gráficos se redimensionam arrastando o canto e o layout é salvo ao soltar. Abaixo do tamanho completo, cada tipo troca para uma visão compacta (ranking, valor com tendência, lista); nada fica menor que 2×2 ([ADR 0011](docs/adr/0011-graficos-adaptaveis-e-autosave-do-layout.md)).
 
 E2E sem a Groq real: `node frontend/e2e/fake-groq.mjs` (porta 8765), API com `GAMA_GROQ_BASE_URL=http://127.0.0.1:8765/openai/v1` e `E2E_FAKE_GROQ=1 npx playwright test e2e/ai.spec.ts`. As configurações `fake-groq`, `api-e2e` e `web-e2e` em `.claude/launch.json` sobem esse ambiente contra o banco `gamatermic_e2e`.
 

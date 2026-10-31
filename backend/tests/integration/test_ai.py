@@ -252,9 +252,9 @@ async def test_charts_for_existing_dashboard_skip_repeats_and_require_edit(clien
     assert r.status_code == 200, r.text
     out = r.json()
     assert [p["title"] for p in out["proposals"]] == ["Por projeto"]
-    assert out["discarded"] == [{"title": "Faturamento", "reason": "Já existe um gráfico igual no painel."}]
+    assert out["discarded"] == [{"title": "Faturamento", "reason": "Mostra a mesma informação de “Faturamento no mês”."}]
     sent = f.bodies()[0]["messages"][1]["content"]
-    assert "graficos_ja_no_painel" in sent and "Faturamento no mês" in sent
+    assert "Faturamento no mês" in sent and '"mostra": "soma de valor"' in sent
     # quem cria dashboards mas nao edita ESTE painel nao gera graficos para ele (e nada sai para a Groq)
     from app.modules.iam.models import Permission, Role, RolePermission
 
@@ -273,3 +273,84 @@ async def test_charts_for_existing_dashboard_skip_repeats_and_require_edit(clien
     assert (await client.post(f"{API}/ai/dashboard-proposals", headers=h, json=body)).status_code == 403
     r = await client.post(f"{API}/ai/dashboard-proposals", headers=admin, json=body | {"dashboard_id": "00000000-0000-0000-0000-000000000000"})
     assert r.status_code == 404 and len(f.bodies()) == n
+
+
+async def test_layout_aware_suggestions_and_sanitized_layout_changes(client, admin, seeded, fake):
+    await _configure(client, admin)
+    ds, did = seeded["datasets"]["vendas"], seeded["dashboards"][0]
+    # Vendas - Visao Geral, ordem (y, x): w1..w4 = 3 KPIs + medidor na linha 0; w5 = linha 8x4 em (0,3); w6 = pizza 4x4 em (8,3)
+    f = fake({"explanation": "", "widgets": [W("bar", "Por projeto", [M("sum", "valor", "Total")], ["projeto"], x=6, y=3, w=6, h=4)],
+              "layout_changes": [
+                  {"ref": "w5", "x": 0, "y": 3, "w": 6, "h": 4, "reason": "abre espaço ao lado"},
+                  {"ref": "w6", "x": 0, "y": 7, "w": 2, "h": 2, "reason": "vira lista"},
+                  {"ref": "w1", "x": 0, "y": 0, "w": 3, "h": 3, "reason": "nada muda"},
+                  {"ref": "w99", "x": 0, "y": 0, "w": 3, "h": 3, "reason": "nao existe"},
+                  {"ref": "w2", "x": 3, "y": 0, "w": 1, "h": 3, "reason": "pequeno demais"},
+              ]})
+    out = (await client.post(f"{API}/ai/dashboard-proposals", headers=admin,
+                             json={"dataset_id": str(ds), "dashboard_id": str(did), "prompt": "barras por projeto ao lado da linha"})).json()
+    ctx = f.bodies()[0]["messages"][1]["content"]
+    assert '"layout_atual"' in ctx and '"ref": "w5"' in ctx and '"w": 8' in ctx
+    assert (out["proposals"][0]["x"], out["proposals"][0]["y"], out["proposals"][0]["w"]) == (6, 3, 6)
+    ch = {c["title"]: c for c in out["layout_changes"]}
+    assert set(ch) == {"Faturamento - últimos 12 meses", "Faturamento por empresa", "Pedidos ganhos"}  # no-op e ref inexistente somem
+    assert ch["Faturamento - últimos 12 meses"]["before"]["w"] == 8 and ch["Faturamento - últimos 12 meses"]["after"]["w"] == 6
+    assert ch["Faturamento - últimos 12 meses"]["compact"] is False
+    assert ch["Faturamento por empresa"]["compact"] is True  # pizza 2x2 fica na visao compacta
+    assert ch["Pedidos ganhos"]["after"]["w"] == 2  # nunca abaixo de 2x2
+
+
+async def test_new_dashboard_has_no_layout_changes(client, admin, seeded, fake):
+    await _configure(client, admin)
+    fake({"explanation": "", "widgets": [W("kpi", "Total", [M("sum", "valor", "Total")], x=0, y=0, w=3, h=3)],
+          "layout_changes": [{"ref": "w1", "x": 0, "y": 0, "w": 6, "h": 4, "reason": "x"}]})
+    out = (await client.post(f"{API}/ai/dashboard-proposals", headers=admin,
+                             json={"dataset_id": str(seeded["datasets"]["vendas"]), "prompt": "total"})).json()
+    assert out["layout_changes"] == [] and (out["proposals"][0]["x"], out["proposals"][0]["y"]) == (0, 0)
+
+
+async def test_layout_never_below_compact_minimum(client, admin, seeded):
+    did = seeded["dashboards"][0]
+    d = (await client.get(f"{API}/dashboards/{did}", headers=admin)).json()
+    items = [{"id": w["id"], "x": w["x"], "y": w["y"], "w": w["w"], "h": w["h"]} for w in d["widgets"]]
+    items[0]["w"] = 1
+    r = await client.put(f"{API}/dashboards/{did}/layout", headers=admin, json={"items": items})
+    assert r.status_code == 422 and r.json()["code"] == "widget_too_small"
+    items[0]["w"] = 2
+    items[0]["h"] = 2
+    assert (await client.put(f"{API}/dashboards/{did}/layout", headers=admin, json={"items": items})).status_code == 200
+    w = {k: d["widgets"][0][k] for k in ("type", "title", "dataset_id", "query_config", "viz_config")}
+    r = await client.post(f"{API}/dashboards/{did}/widgets", headers=admin, json=w | {"x": 0, "y": 30, "w": 1, "h": 2})
+    assert r.status_code == 422 and r.json()["code"] == "widget_too_small"
+
+
+async def test_repeats_are_detected_by_content_not_by_exact_config(client, admin, seeded, fake):
+    """Mesmo conteudo com outro titulo, periodo, tipo da mesma familia ou ordem/limite diferentes conta como repetido."""
+    await _configure(client, admin)
+    ds, did = seeded["datasets"]["vendas"], seeded["dashboards"][0]
+    fake({"explanation": "", "widgets": [
+        W("kpi", "Receita do ano", [M("sum", "valor", "Receita")], period_preset="this_year"),      # = KPI "Faturamento no mês"
+        W("bar", "Empresas", [M("sum", "valor", "Total")], ["empresa_faturar"], limit=3),            # = pizza "Faturamento por empresa"
+        W("pie", "Segmentos", [M("sum", "valor", "Total")], ["segmento"]),                           # = barras "Faturamento por segmento"
+        W("kpi", "Prazo médio", [M("avg", "prazo_dias", "Prazo")], format="integer"),               # novo
+        W("kpi", "Prazo médio (de novo)", [M("avg", "prazo_dias", "Dias")], format="integer"),      # repetido dentro da propria resposta
+    ]})
+    out = (await client.post(f"{API}/ai/dashboard-proposals", headers=admin,
+                             json={"dataset_id": str(ds), "dashboard_id": str(did), "prompt": "mais indicadores"})).json()
+    assert [p["title"] for p in out["proposals"]] == ["Prazo médio"]
+    assert {d["title"]: d["reason"] for d in out["discarded"]} == {
+        "Receita do ano": "Mostra a mesma informação de “Faturamento no mês”.",
+        "Empresas": "Mostra a mesma informação de “Faturamento por empresa”.",
+        "Segmentos": "Mostra a mesma informação de “Faturamento por segmento”.",
+        "Prazo médio (de novo)": "Mostra a mesma informação de “Prazo médio”.",
+    }
+
+
+async def test_layout_changes_dropped_when_every_suggestion_is_a_repeat(client, admin, seeded, fake):
+    await _configure(client, admin)
+    ds, did = seeded["datasets"]["vendas"], seeded["dashboards"][0]
+    fake({"explanation": "", "widgets": [W("kpi", "Receita", [M("sum", "valor", "Receita")])],
+          "layout_changes": [{"ref": "w5", "x": 0, "y": 3, "w": 4, "h": 4, "reason": "abre espaço"}]})
+    out = (await client.post(f"{API}/ai/dashboard-proposals", headers=admin,
+                             json={"dataset_id": str(ds), "dashboard_id": str(did), "prompt": "mais um KPI"})).json()
+    assert out["proposals"] == [] and out["layout_changes"] == [] and len(out["discarded"]) == 1

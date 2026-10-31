@@ -10,6 +10,7 @@ import { Badge, Button, Card, ErrorBox, Field, Input, Modal, Select, Spinner, us
 import { PRESETS, useDashboardData } from "../dashboards/useDashboardData";
 import { AiWidgetsPanel } from "../ai-dashboards/AiWidgetsPanel";
 import { WidgetCard } from "../widgets/WidgetCard";
+import { COMPACT_MIN, DEFAULT_SIZE } from "../widgets/sizes";
 import type { Widget } from "../widgets/types";
 import { Draft, WidgetConfigForm, blankDraft } from "./WidgetConfig";
 
@@ -45,8 +46,11 @@ export function EditorPage() {
   const [selected, setSelected] = useState<string | "new" | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [conflict, setConflict] = useState(false);
-  const [dirtyLayout, setDirty] = useState(false);
-  const layoutRef = useRef<Layout[]>([]);
+  // tamanho ao vivo enquanto o usuario redimensiona (troca visao completa/compacta antes de soltar)
+  const [live, setLive] = useState<Record<string, { w: number; h: number }>>({});
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const versionRef = useRef(0);
+  const saveQueue = useRef<Promise<void>>(Promise.resolve());
   const [meta, setMeta] = useState<{ name: string; period: string; refresh: number } | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
   const closeAi = useCallback(() => setAiOpen(false), []); // estavel: o Modal refoca a cada troca de onClose
@@ -54,23 +58,30 @@ export function EditorPage() {
   const data = useDashboardData(id, null, [], 60);
   const results = useMemo(() => Object.fromEntries((data.data?.widgets ?? []).map((r) => [r.widget_id, r])), [data.data]);
 
-  useEffect(() => { if (dash.data) { setWidgets(dash.data.widgets); setVersion(dash.data.version); setMeta({ name: dash.data.name, period: dash.data.default_period, refresh: dash.data.refresh_interval_seconds }); setDirty(false); } }, [dash.data]);
-  const hdr = () => ({ headers: { "If-Match": `"${version}"` } });
-  const apply = (d: Dash) => { setWidgets(d.widgets); setVersion(d.version); qc.invalidateQueries({ queryKey: ["dashboard-data", id] }); };
+  useEffect(() => { if (dash.data) { setWidgets(dash.data.widgets); setVersion(dash.data.version); setMeta({ name: dash.data.name, period: dash.data.default_period, refresh: dash.data.refresh_interval_seconds }); versionRef.current = dash.data.version; } }, [dash.data]);
+  const hdr = () => ({ headers: { "If-Match": `"${versionRef.current}"` } });
+  const apply = (d: Dash) => { setWidgets(d.widgets); setVersion(d.version); versionRef.current = d.version; setLive({}); qc.invalidateQueries({ queryKey: ["dashboard-data", id] }); };
   const guarded = async (fn: () => Promise<void>) => {
     try { await fn(); } catch (e) { if (e instanceof ApiError && e.status === 409) setConflict(true); else toast(fail(e), "danger"); }
   };
 
-  const saveLayout = () => guarded(async () => {
-    const items = layoutRef.current.map((l) => ({ id: l.i, x: l.x, y: l.y, w: l.w, h: l.h }));
-    apply(await put<Dash>(`/dashboards/${id}/layout`, { items }, hdr())); setDirty(false); toast("Layout salvo.");
-  });
+  // salva sozinho ao soltar (arrastar ou redimensionar); saves em fila para encadear a versao (If-Match)
+  const autoSave = (l: Layout[]) => {
+    const key = (xs: { i?: string; id?: string; x: number; y: number; w: number; h: number }[]) => xs.map((x) => `${x.i ?? x.id}:${x.x},${x.y},${x.w},${x.h}`).sort().join("|");
+    if (key(l) === key(widgets)) { setLive({}); return; }
+    const items = l.map((x) => ({ id: x.i, x: x.x, y: x.y, w: x.w, h: x.h }));
+    setSaveState("saving");
+    saveQueue.current = saveQueue.current.then(async () => {
+      try { apply(await put<Dash>(`/dashboards/${id}/layout`, { items }, hdr())); setSaveState("saved"); }
+      catch (e) { setSaveState("error"); if (e instanceof ApiError && e.status === 409) setConflict(true); else toast(fail(e), "danger"); }
+    });
+  };
   const saveMeta = () => guarded(async () => { apply(await patch<Dash>(`/dashboards/${id}`, { name: meta!.name, default_period: meta!.period, refresh_interval_seconds: meta!.refresh }, hdr())); toast("Configurações salvas."); });
   const saveWidget = () => guarded(async () => {
     if (!draft) return;
     if (selected === "new") {
       const y = Math.max(0, ...widgets.map((w) => w.y + w.h));
-      apply(await post<Dash>(`/dashboards/${id}/widgets`, { ...draft, x: 0, y, w: draft.type === "kpi" || draft.type === "gauge" ? 3 : 6, h: draft.type === "kpi" ? 3 : 4 }, hdr()));
+      apply(await post<Dash>(`/dashboards/${id}/widgets`, { ...draft, x: 0, y, ...(DEFAULT_SIZE[draft.type] ?? { w: 6, h: 4 }) }, hdr()));
     } else apply(await patch<Dash>(`/dashboards/${id}/widgets/${selected}`, draft, hdr()));
     setSelected(null); setDraft(null); toast("Widget salvo.");
   });
@@ -78,7 +89,7 @@ export function EditorPage() {
 
   if (dash.isLoading || datasets.isLoading || !meta) return <Spinner />;
   if (dash.error) return <ErrorBox error={dash.error} />;
-  const layout: Layout[] = widgets.map((w) => ({ i: w.id, x: w.x, y: w.y, w: w.w, h: w.h, minW: 2, minH: 2 }));
+  const layout: Layout[] = widgets.map((w) => ({ i: w.id, x: w.x, y: w.y, w: w.w, h: w.h, minW: COMPACT_MIN.w, minH: COMPACT_MIN.h }));
   const startNew = () => { const ds = datasets.data?.[0]; if (ds) { setDraft(blankDraft(ds)); setSelected("new"); } };
   const edit = (w: Widget) => { setDraft({ type: w.type, title: w.title, dataset_id: w.dataset_id!, query_config: w.query_config as any, viz_config: w.viz_config as any, follows_global_period: w.follows_global_period }); setSelected(w.id); };
 
@@ -87,10 +98,15 @@ export function EditorPage() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div><Link to={`/dashboards/${id}`} className="text-sm text-ink-mute hover:underline">← Voltar à visualização</Link><h1 className="text-2xl font-bold">Editor — {dash.data!.name}</h1></div>
         <div className="flex items-center gap-2">
+          {/* status a esquerda dos botoes: reserva largura sem deixar vao entre os botoes e a borda direita */}
+          <span role="status" aria-live="polite" className="min-w-[9rem] text-right text-xs text-ink-mute">
+            {saveState === "saving" ? "Salvando layout…" : saveState === "saved" ? "Layout salvo" : saveState === "error" ? "Layout não salvo" : ""}
+          </span>
           <Badge tone="neutral">versão {version}</Badge>
+          {/* nova aba: o editor continua aberto; vale tambem para painel fora do ar (quem edita pode pre-visualizar) */}
+          <a href={`/tv/preview/${id}`} target="_blank" rel="noopener noreferrer" aria-label="Prévia na TV (abre em nova aba)"><Button variant="secondary" tabIndex={-1}>Prévia na TV ↗</Button></a>
           {canAi && <Button variant="secondary" onClick={() => setAiOpen(true)}>Gráficos com IA</Button>}
           <Button variant="secondary" onClick={startNew}>+ Widget</Button>
-          <Button onClick={saveLayout} disabled={!dirtyLayout}>Salvar layout</Button>
         </div>
       </div>
       <Card title="Configurações" className="print:hidden">
@@ -101,17 +117,16 @@ export function EditorPage() {
           <div className="flex items-end"><Button variant="secondary" onClick={saveMeta}>Salvar configurações</Button></div>
         </div>
       </Card>
-      <p className="text-sm text-ink-mute">Arraste e redimensione os widgets na grade de 12 colunas. O layout salvo aparece idêntico no desktop e na TV.</p>
+      <p className="text-sm text-ink-mute">
+        Arraste para mover e puxe o canto inferior direito para redimensionar. Abaixo do tamanho completo, o gráfico troca para uma visão compacta
+        (ranking, valor com tendência, lista). Tudo é salvo ao soltar e aparece igual no desktop e na TV.
+      </p>
       <RGL className="layout" layout={layout} cols={12} rowHeight={84} margin={[12, 12]} draggableCancel=".no-drag"
-        onLayoutChange={(l) => {
-          layoutRef.current = l;
-          const a = l.map((x) => `${x.i}:${x.x},${x.y},${x.w},${x.h}`).sort().join("|");
-          const b = widgets.map((w) => `${w.id}:${w.x},${w.y},${w.w},${w.h}`).sort().join("|");
-          setDirty(a !== b);
-        }}>
+        onResize={(_l, _old, item) => setLive((s) => (s[item.i]?.w === item.w && s[item.i]?.h === item.h ? s : { ...s, [item.i]: { w: item.w, h: item.h } }))}
+        onResizeStop={(l) => autoSave(l)} onDragStop={(l) => autoSave(l)}>
         {widgets.map((w) => (
           <div key={w.id} className="relative">
-            <WidgetCard widget={w} result={results[w.id]} />
+            <WidgetCard widget={w} result={results[w.id]} size={live[w.id] ?? w} showViewHint />
             <div className="no-drag absolute right-2 top-2 flex gap-1">
               <button className="rounded bg-panel/90 px-2 py-0.5 text-xs font-semibold shadow hover:bg-brand-soft" onClick={() => edit(w)}>Editar</button>
               <button aria-label={`Remover ${w.title}`} className="rounded bg-panel/90 px-2 py-0.5 text-xs font-semibold text-danger shadow hover:bg-brand-soft" onClick={() => removeWidget(w.id)}>✕</button>
@@ -124,7 +139,7 @@ export function EditorPage() {
       </Modal>
       <Modal open={aiOpen} wide title="Gráficos com IA" onClose={closeAi}>
         <AiWidgetsPanel dashboardId={id!} widgets={widgets} version={version} defaultPeriod={meta.period} datasets={datasets.data ?? []}
-          onAdded={(d, n) => { apply(d); setAiOpen(false); toast(`${n} gráfico(s) adicionado(s) ao painel.`); }}
+          onAdded={(d, n, m) => { apply(d); setAiOpen(false); toast([n && `${n} gráfico(s) adicionado(s)`, m && `${m} ajustado(s)`].filter(Boolean).join(" e ") + " no painel."); }}
           onConflict={() => { setAiOpen(false); setConflict(true); }} />
       </Modal>
       <Modal open={conflict} title="Conflito de edição" onClose={() => setConflict(false)}>

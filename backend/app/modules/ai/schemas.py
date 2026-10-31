@@ -30,6 +30,8 @@ class Proposal(BaseModel):
     query_config: dict[str, Any]
     viz_config: dict[str, Any]
     follows_global_period: bool
+    x: int | None = None  # posicao sugerida pela IA (None = encaixar abaixo)
+    y: int | None = None
     w: int
     h: int
     preview: dict[str, Any] | None = None
@@ -38,6 +40,25 @@ class Proposal(BaseModel):
 class Discarded(BaseModel):
     title: str
     reason: str
+
+
+class Box(BaseModel):
+    x: int
+    y: int
+    w: int
+    h: int
+
+
+class LayoutChange(BaseModel):
+    """Mudanca sugerida num grafico que ja esta no painel, para abrir espaco ou melhorar a leitura."""
+
+    widget_id: uuid.UUID
+    title: str
+    type: str
+    before: Box
+    after: Box
+    reason: str
+    compact: bool  # depois da mudanca o grafico fica abaixo do tamanho completo (visao compacta)
 
 
 class Usage(BaseModel):
@@ -50,4 +71,5 @@ class ProposalsOut(BaseModel):
     explanation: str
     proposals: list[Proposal]
     discarded: list[Discarded]
+    layout_changes: list[LayoutChange] = []
     usage: Usage

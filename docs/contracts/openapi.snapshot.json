@@ -367,6 +367,34 @@
     "title": "Body_upload_api_v1_datasets__did__uploads_post",
     "type": "object"
    },
+   "Box": {
+    "properties": {
+     "h": {
+      "title": "H",
+      "type": "integer"
+     },
+     "w": {
+      "title": "W",
+      "type": "integer"
+     },
+     "x": {
+      "title": "X",
+      "type": "integer"
+     },
+     "y": {
+      "title": "Y",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "x",
+     "y",
+     "w",
+     "h"
+    ],
+    "title": "Box",
+    "type": "object"
+   },
    "ChangePasswordIn": {
     "properties": {
      "current_password": {
@@ -1796,6 +1824,49 @@
     "title": "InferredField",
     "type": "object"
    },
+   "LayoutChange": {
+    "description": "Mudanca sugerida num grafico que ja esta no painel, para abrir espaco ou melhorar a leitura.",
+    "properties": {
+     "after": {
+      "$ref": "#/components/schemas/Box"
+     },
+     "before": {
+      "$ref": "#/components/schemas/Box"
+     },
+     "compact": {
+      "title": "Compact",
+      "type": "boolean"
+     },
+     "reason": {
+      "title": "Reason",
+      "type": "string"
+     },
+     "title": {
+      "title": "Title",
+      "type": "string"
+     },
+     "type": {
+      "title": "Type",
+      "type": "string"
+     },
+     "widget_id": {
+      "format": "uuid",
+      "title": "Widget Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "widget_id",
+     "title",
+     "type",
+     "before",
+     "after",
+     "reason",
+     "compact"
+    ],
+    "title": "LayoutChange",
+    "type": "object"
+   },
    "LayoutItem": {
     "properties": {
      "h": {
@@ -2399,6 +2470,28 @@
      "w": {
       "title": "W",
       "type": "integer"
+     },
+     "x": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "X"
+     },
+     "y": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Y"
      }
     },
     "required": [
@@ -2488,6 +2581,14 @@
      "explanation": {
       "title": "Explanation",
       "type": "string"
+     },
+     "layout_changes": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/LayoutChange"
+      },
+      "title": "Layout Changes",
+      "type": "array"
      },
      "proposals": {
       "items": {

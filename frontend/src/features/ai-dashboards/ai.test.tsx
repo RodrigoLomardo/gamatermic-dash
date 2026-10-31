@@ -5,7 +5,7 @@ import axe from "axe-core";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { useAuth } from "@/app/auth";
 import { AiCreatePage } from "./AiCreatePage";
-import { pack } from "./layout";
+import { arrange, pack } from "./layout";
 
 const DS = { id: "ds1", name: "Vendas (pedidos)", row_count: 10, sector_id: "s1" };
 const preview = (data: unknown[]) => ({ widget_id: "x", type: "kpi", data, previous: null, dataset_version: 1, data_as_of: null, generated_at: null, period: null, error: null });
@@ -103,5 +103,28 @@ describe("Criar com IA", () => {
     await screen.findByLabelText("Dataset");
     const r = await axe.run(container, { rules: { "color-contrast": { enabled: false } } });
     expect(r.violations.map((v) => v.id)).toEqual([]);
+  });
+});
+
+describe("arrange (sugestões de layout da IA)", () => {
+  const line = { id: "line", x: 0, y: 0, w: 8, h: 4 };
+  it("com a mudança aceita, o novo entra ao lado; sem ela, desce sem sobrepor", () => {
+    const novo = { id: "n", x: 6, y: 0, w: 6, h: 4 };
+    const ok = arrange([{ ...line, w: 6 }], [novo]);
+    expect(ok.get("n")).toEqual({ x: 6, y: 0, w: 6, h: 4 });
+    const recusada = arrange([line], [novo]);
+    expect(recusada.get("n")).toEqual({ x: 6, y: 4, w: 6, h: 4 });
+  });
+  it("novos sem posição vão para o fim, empacotados", () => {
+    const r = arrange([line], [{ id: "a", w: 3, h: 3 }, { id: "b", w: 3, h: 3 }]);
+    expect([r.get("a"), r.get("b")]).toEqual([{ x: 0, y: 4, w: 3, h: 3 }, { x: 3, y: 4, w: 3, h: 3 }]);
+  });
+});
+
+describe("arrange: espaço livre", () => {
+  it("gráfico novo sobe até o primeiro espaço livre (sem buraco no topo)", () => {
+    expect(arrange([], [{ id: "n", x: 0, y: 3, w: 8, h: 4 }]).get("n")).toEqual({ x: 0, y: 0, w: 8, h: 4 });
+    // ao lado de um KPI 3x3: sobe ate y 0 na coluna livre
+    expect(arrange([{ id: "k", x: 0, y: 0, w: 3, h: 3 }], [{ id: "n", x: 3, y: 5, w: 6, h: 4 }]).get("n")).toEqual({ x: 3, y: 0, w: 6, h: 4 });
   });
 });

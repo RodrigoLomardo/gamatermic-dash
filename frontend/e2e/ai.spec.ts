@@ -63,10 +63,10 @@ test("no editor, gera gráficos com IA para o painel sem repetir os existentes",
   await dialog.getByLabel("Usar “Valor por mês”").check();
   await dialog.getByRole("button", { name: "Adicionar 1 gráfico ao painel" }).click();
   await expect(dialog).toBeHidden();
-  await expect(page.getByText("1 gráfico(s) adicionado(s) ao painel.")).toBeVisible();
+  await expect(page.getByText("1 gráfico(s) adicionado(s) no painel.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Editar" })).toHaveCount(1);
 
-  // de novo: o que ja esta no painel nao volta como sugestao; agora o dataset do painel vem pre-selecionado
+  // de novo: o que ja esta no painel nao volta como sugestao, e a IA propoe abrir espaco ao lado do grafico largo
   await page.getByRole("button", { name: "Gráficos com IA" }).click();
   await expect(dialog.getByRole("option", { name: /Vendas \(pedidos\) \(do painel\)/ })).toBeAttached();
   await dialog.getByLabel(/Que gráficos/).fill("gráficos de faturamento");
@@ -74,5 +74,39 @@ test("no editor, gera gráficos com IA para o painel sem repetir os existentes",
   await expect(dialog.getByRole("checkbox", { name: /^Usar/ })).toHaveCount(3);
   await expect(dialog.getByLabel("Usar “Valor por mês”")).toHaveCount(0);
   await dialog.getByText(/descartada\(s\)/).click();
-  await expect(dialog.getByText("Valor por mês: Já existe um gráfico igual no painel.")).toBeVisible();
+  await expect(dialog.getByText("Valor por mês: Mostra a mesma informação de “Valor por mês”.")).toBeVisible();
+  await expect(dialog.getByText("Mudanças sugeridas no layout")).toBeVisible();
+  await expect(dialog.getByText("8×4 em (0, 0) → 4×4 em (0, 0)")).toBeVisible();
+  await dialog.getByRole("button", { name: "Nenhum" }).click();
+  await dialog.getByRole("checkbox", { name: /^Usar “Top / }).check();
+  await dialog.getByRole("button", { name: "Adicionar 1 gráfico e ajustar 1" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByText("1 gráfico(s) adicionado(s) e 1 ajustado(s) no painel.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Editar" })).toHaveCount(2);
+});
+
+test("no editor, redimensionar até abaixo do tamanho completo mostra a visão compacta e salva sozinho", async ({ page }) => {
+  await login(page);
+  await page.goto("/dashboards/nova");
+  await page.getByLabel("Nome").fill(`Redimensionar ${Date.now()}`);
+  await page.getByRole("button", { name: "Criar e editar" }).click();
+  await page.getByRole("button", { name: "+ Widget" }).click();
+  const modal = page.getByRole("dialog", { name: "Novo widget" });
+  await modal.getByLabel("Tipo").selectOption("bar");
+  await modal.getByRole("button", { name: "Salvar widget" }).click();
+  const card = page.locator(".react-grid-item").first();
+  await expect(card.locator("article")).toHaveAttribute("data-view", "full");
+  const handle = card.locator(".react-resizable-handle");
+  const hb = (await handle.boundingBox())!;
+  const cb = (await card.boundingBox())!;
+  // puxa o canto ate ~2x2 (coluna ~ largura/6 do card de 6 colunas)
+  await page.mouse.move(hb.x + hb.width / 2, hb.y + hb.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(cb.x + cb.width / 3, cb.y + 150, { steps: 12 });
+  await expect(card.locator("article")).toHaveAttribute("data-view", "compact"); // troca ao vivo, antes de soltar
+  await page.mouse.up();
+  await expect(page.getByRole("status").filter({ hasText: "Layout salvo" })).toBeVisible();
+  await page.reload();
+  await expect(page.locator(".react-grid-item").first().locator("article")).toHaveAttribute("data-view", "compact");
+  await expect(page.getByText("compacta", { exact: true })).toBeVisible();
 });

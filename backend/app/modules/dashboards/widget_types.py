@@ -24,6 +24,8 @@ class VizConfig(BaseModel):
     drill_field: str | None = None  # campo filtrado no drill-down
 
 
+# min_w/min_h: menor tamanho da visao completa. Abaixo disso (ate COMPACT_MIN) o frontend troca
+# para a visao compacta do tipo (linha -> valor + tendencia, barras/pizza -> ranking, tabela -> lista curta).
 WIDGET_TYPES = {
     "kpi": {"label": "Indicador (KPI)", "min_w": 2, "min_h": 2, "needs": "1 medida; comparação com período anterior opcional"},
     "line": {"label": "Linha / evolução", "min_w": 4, "min_h": 3, "needs": "tempo + medidas (+1 dimensão para séries)"},
@@ -32,10 +34,23 @@ WIDGET_TYPES = {
     "table": {"label": "Tabela", "min_w": 4, "min_h": 3, "needs": "colunas (linhas) ou dimensões + medidas"},
     "gauge": {"label": "Medidor (meta)", "min_w": 2, "min_h": 3, "needs": "1 medida e meta em viz_config.target"},
 }
+COMPACT_MIN = (2, 2)  # nenhum grafico fica menor que isto (nem na visao compacta)
+
+
+def full_min(wtype: str) -> tuple[int, int]:
+    """Menor tamanho (w, h) da visao completa do tipo."""
+    t = WIDGET_TYPES.get(wtype)
+    return (int(t["min_w"]), int(t["min_h"])) if t else COMPACT_MIN  # type: ignore[call-overload]
+
+
+def check_size(wtype: str, w: int, h: int) -> None:
+    if w < COMPACT_MIN[0] or h < COMPACT_MIN[1]:
+        label = WIDGET_TYPES.get(wtype, {}).get("label", wtype)
+        raise Unprocessable(f"'{label}' precisa de pelo menos {COMPACT_MIN[0]}×{COMPACT_MIN[1]} na grade.", code="widget_too_small")
 
 
 def catalog() -> list[dict]:
-    return [{"type": k, **v, "viz_schema": VizConfig.model_json_schema(), "query_schema": QuerySpec.model_json_schema()}
+    return [{"type": k, **v, "compact_min_w": COMPACT_MIN[0], "compact_min_h": COMPACT_MIN[1], "viz_schema": VizConfig.model_json_schema(), "query_schema": QuerySpec.model_json_schema()}
             for k, v in WIDGET_TYPES.items()]
 
 

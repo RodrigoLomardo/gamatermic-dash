@@ -31,7 +31,7 @@ describe("Gráficos com IA no editor", () => {
       calls.push({ url, body: init?.body ? JSON.parse(String(init.body)) : undefined, headers: init?.headers });
       const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { "Content-Type": "application/json" } });
       if (url.endsWith("/ai/status")) return json({ available: true, model: "m" });
-      if (url.endsWith("/ai/dashboard-proposals")) return json({ explanation: "", proposals: [P("p1", "Novo A"), P("p2", "Novo B")], discarded: [{ title: "Faturamento", reason: "Já existe um gráfico igual no painel." }], usage: { model: "m", prompt_tokens: 1, completion_tokens: 1 } });
+      if (url.endsWith("/ai/dashboard-proposals")) return json({ explanation: "", proposals: [P("p1", "Novo A"), P("p2", "Novo B")], discarded: [{ title: "Faturamento", reason: "Já existe um gráfico igual no painel." }], layout_changes: [], usage: { model: "m", prompt_tokens: 1, completion_tokens: 1 } });
       if (url.includes("/dashboards/d1/widgets")) { version += 1; return json({ id: "d1", version, widgets: [] }, 201); }
       return json({});
     });
@@ -48,10 +48,46 @@ describe("Gráficos com IA no editor", () => {
 
     await userEvent.click(screen.getByLabelText("Usar “Novo A”"));
     await userEvent.click(screen.getByRole("button", { name: "Adicionar 1 gráfico ao painel" }));
-    await waitFor(() => expect(onAdded).toHaveBeenCalledWith(expect.objectContaining({ version: 8 }), 1));
+    await waitFor(() => expect(onAdded).toHaveBeenCalledWith(expect.objectContaining({ version: 8 }), 1, 0));
     const added = calls.filter((c) => c.url.includes("/widgets"));
     expect(added.map((c) => c.body.title)).toEqual(["Novo B"]);
     expect(added[0].body).toMatchObject({ x: 0, y: 7 }); // abaixo do ultimo widget (y 3 + h 4)
     expect(added[0].headers["If-Match"]).toBe('"7"');
   });
+
+  it("mostra as mudanças de layout sugeridas, a prévia, e aplica o layout antes de inserir o novo ao lado", async () => {
+    const calls: { url: string; method: string; body: any }[] = [];
+    let version = 3;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = String(input); const method = init?.method ?? "GET";
+      calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
+      const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: { "Content-Type": "application/json" } });
+      if (url.endsWith("/ai/status")) return json({ available: true, model: "m" });
+      if (url.endsWith("/ai/dashboard-proposals")) return json({ explanation: "", discarded: [], usage: { model: "m", prompt_tokens: 1, completion_tokens: 1 },
+        proposals: [{ ...P("p1", "Por projeto"), x: 6, y: 0, w: 6, h: 4 }],
+        layout_changes: [{ widget_id: "big", title: "Evolução", type: "line", before: { x: 0, y: 0, w: 12, h: 4 }, after: { x: 0, y: 0, w: 6, h: 4 }, reason: "abre espaço ao lado", compact: false }] });
+      version += 1;
+      return json({ id: "d1", version, widgets: [] }, method === "POST" ? 201 : 200);
+    });
+    const onAdded = vi.fn();
+    render(<QueryClientProvider client={new QueryClient()}>
+      <AiWidgetsPanel dashboardId="d1" widgets={[{ ...W("big", "v", 0, 4), type: "line", w: 12 }]} version={3} defaultPeriod="this_month" datasets={DS as never} onAdded={onAdded} onConflict={() => {}} />
+    </QueryClientProvider>);
+    await userEvent.type(await screen.findByLabelText(/Que gráficos/), "barras ao lado");
+    await userEvent.click(screen.getByRole("button", { name: "Gerar gráficos" }));
+    expect(await screen.findByText("Mudanças sugeridas no layout")).toBeInTheDocument();
+    expect(screen.getByText("abre espaço ao lado")).toBeInTheDocument();
+    expect(screen.getByText(/1 gráfico\(s\) novo\(s\), 1 ajustado/)).toBeInTheDocument();
+    // recusar a mudanca: o novo desce para nao sobrepor e nada no painel muda
+    await userEvent.click(screen.getByLabelText(/Ajustar “Evolução”/));
+    expect(screen.getByText(/1 gráfico\(s\) novo\(s\), 0 ajustado/)).toBeInTheDocument();
+    await userEvent.click(screen.getByLabelText(/Ajustar “Evolução”/));
+    await userEvent.click(screen.getByRole("button", { name: "Adicionar 1 gráfico e ajustar 1" }));
+    await waitFor(() => expect(onAdded).toHaveBeenCalledWith(expect.anything(), 1, 1));
+    const writes = calls.filter((c) => c.url.includes("/dashboards/d1/"));
+    expect(writes.map((c) => c.method)).toEqual(["PUT", "POST"]);
+    expect(writes[0].body.items).toEqual([{ id: "big", x: 0, y: 0, w: 6, h: 4 }]);
+    expect(writes[1].body).toMatchObject({ title: "Por projeto", x: 6, y: 0, w: 6, h: 4 });
+  });
 });
+

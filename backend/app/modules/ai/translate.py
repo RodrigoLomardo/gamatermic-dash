@@ -4,8 +4,10 @@ import unicodedata
 from typing import Any
 
 from app.core.errors import Unprocessable
+from app.modules.dashboards.widget_types import full_min
 from app.modules.query.compiler import FieldMeta
 
+GRID_COLS, MAX_H, MAX_Y = 12, 20, 400
 SIZES = {"kpi": (3, 3), "gauge": (3, 3), "line": (8, 4), "bar": (6, 4), "pie": (4, 4), "table": (6, 4)}
 LIMITS = {"bar": (10, 15), "pie": (6, 8), "table": (15, 50)}  # (padrao, maximo)
 NUMERIC = {"integer", "decimal"}
@@ -155,7 +157,23 @@ def to_widget(raw: dict, fields: dict[str, FieldMeta], labels: dict[str, str], t
             vc["columns"] = [{"field": d, "label": labels.get(d, d)} for d in qc["dimensions"]] + [
                 {"field": m["alias"], "label": measure_labels[m["alias"]], "format": "integer" if m["agg"] in ("count", "count_distinct") else fmt} for m in qc["measures"]]
 
-    w, h = SIZES[wtype]
+    x, y, w, h = placement(wtype, raw)
     title = (raw.get("title") or "Sem título").strip()[:160]
     return {"type": wtype, "title": title, "rationale": (raw.get("rationale") or "").strip()[:300], "query_config": qc,
-            "viz_config": vc, "follows_global_period": follows, "w": w, "h": h}
+            "viz_config": vc, "follows_global_period": follows, "x": x, "y": y, "w": w, "h": h}
+
+
+def _int(v: Any) -> int | None:
+    return v if isinstance(v, int) and not isinstance(v, bool) else None
+
+
+def placement(wtype: str, raw: dict) -> tuple[int | None, int | None, int, int]:
+    """Posicao sugerida pelo modelo, saneada. Grafico novo nasce na visao completa (>= minimo do tipo)."""
+    dw, dh = SIZES[wtype]
+    mw, mh = full_min(wtype)
+    w = min(max(_int(raw.get("w")) or dw, mw), GRID_COLS)
+    h = min(max(_int(raw.get("h")) or dh, mh), MAX_H)
+    x, y = _int(raw.get("x")), _int(raw.get("y"))
+    if x is None or y is None:
+        return None, None, w, h
+    return min(max(x, 0), GRID_COLS - w), min(max(y, 0), MAX_Y), w, h

@@ -7,7 +7,7 @@ import { Badge, Button, Card, Empty, ErrorBox, Field, Input, Select, Spinner, Te
 import { PRESETS } from "../dashboards/useDashboardData";
 import { WidgetCard } from "../widgets/WidgetCard";
 import type { Widget, WidgetResult } from "../widgets/types";
-import { pack, slugify } from "./layout";
+import { arrange, slugify } from "./layout";
 
 type Ds = S["DatasetOut"]; type Out = S["ProposalsOut"]; type Proposal = S["Proposal"]; type Dash = S["DashboardOut"]; type Run = S["RunOut"];
 const fail = (e: unknown) => (e instanceof ApiError ? e.message : (e as Error).message);
@@ -96,7 +96,10 @@ export function AiCreatePage() {
     if (!out) return;
     setCreating(true);
     try {
-      const chosen = pack(out.proposals.filter((p) => picked.has(p.id)));
+      // respeita a posicao sugerida pela IA; o que nao tiver posicao (ou colidir) desce
+      const picks = out.proposals.filter((p) => picked.has(p.id));
+      const boxes = arrange([], picks.map((p) => ({ id: p.id, x: p.x ?? undefined, y: p.y ?? undefined, w: p.w, h: p.h })));
+      const chosen = picks.map((p) => ({ ...p, ...boxes.get(p.id)! }));
       const ds = dsList.find((d) => d.id === out.proposals[0]?.dataset_id) ?? dsList.find((d) => d.id === dsId);
       const d = await post<Dash>("/dashboards", {
         slug: `${slugify(name) || "painel-ia"}-${Date.now().toString(36)}`.slice(0, 79), name: name.trim(), sector_id: ds?.sector_id ?? null,

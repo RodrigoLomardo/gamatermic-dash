@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Projeto | gamatermic-dash |
-| Versão | 0.3 |
+| Versão | 0.5 |
 | Data | 30/10/2026 |
 | Estado | **Implementado (Etapas 1–3 e parte da 4)** com Groq falsa. Pendente: Etapa 0/4 com a conta Groq real (qualidade, latência, tokens) — ver §15 |
 | Fontes | Pedido do usuário; `.claude/CLAUDE.md`; código em `backend/app/modules/{query,dashboards,datasets,ingestion}`; documentação oficial Groq (consultada em 30/10/2026, ver §10) |
@@ -230,6 +230,8 @@ Migração revisada e `alembic check` limpo · OpenAPI snapshot e cliente TS reg
 | 0.1 | 30/10/2026 | Versão inicial |
 | 0.2 | 30/10/2026 | Implementado. Ver §15 para o que mudou em relação ao plano e o que falta |
 | 0.3 | 31/10/2026 | Gráficos com IA no editor de um painel existente (§16) e correção do filtro booleano |
+| 0.4 | 31/10/2026 | IA entende e sugere mudanças no layout; gráficos adaptáveis com visão compacta e layout salvo ao soltar (§17, ADR 0011) |
+| 0.5 | 31/10/2026 | Teste com a Groq real: repetidos passam a ser detectados pelo conteúdo e a prévia do layout foi refeita (§18) |
 
 ## 15. Implementação (v0.2) — o que entrou e o que mudou
 
@@ -258,3 +260,37 @@ Migração revisada e `alembic check` limpo · OpenAPI snapshot e cliente TS reg
 **Correção encontrada na verificação:** o compilador montava todas as comparações de um filtro de uma vez, e `> True` quebrava em campo booleano. Isso derrubava **todo widget com `ultima_revisao = true`** (painel *Propostas – Funil Comercial* inteiro e as sugestões de IA sobre propostas). Agora só a comparação pedida é montada; teste de regressão em `test_query.py`.
 
 **Verificado:** 122 testes de backend (novo: painel existente — sem repetidos, 403 sem edição, 404 sem chamar a Groq; regressão do filtro booleano), 28 de frontend (`widgets-panel.test.tsx`), E2E no editor contra a Groq falsa (inclui conferir que um gráfico já adicionado não volta como sugestão), sem rolagem horizontal em 375 px.
+
+## 17. Layout com IA e gráficos adaptáveis (v0.4)
+
+**Pedido:** (a) a IA deve considerar o dimensionamento atual do painel e sugerir alterações para encaixar novos gráficos, não só jogá-los no fim; (b) o usuário redimensiona os gráficos arrastando, sem deixar um gráfico que exige espaço ficar ilegível, e vê visões alternativas ao reduzir.
+
+**(a) IA e layout** — ADR 0010, decisão 12.
+- Prompt ganha `layout_atual` (ref, título, tipo, x, y, w, h) e as regras da grade (12 colunas, mínimos por tipo, sem sobreposição).
+- Saída estrita ganha `x/y/w/h` por widget e `layout_changes` (ref, novo x/y/w/h, motivo).
+- Resposta da API: `Proposal.x/y` e `ProposalsOut.layout_changes[]` com `before`, `after`, `reason`, `compact`.
+- Editor → *Gráficos com IA*: lista "Mudanças sugeridas no layout" (cada uma com caixa de seleção e motivo) e minimapa do painel final (novos em laranja, ajustados com contorno, compactos pontilhados), recalculado a cada caixa marcada. Aplicar grava o layout dos existentes e insere os novos nas posições finais.
+- Encaixe (`arrange`): existentes com as mudanças aceitas primeiro; novos na posição sugerida; colisão desce, espaço livre acima sobe; novos sem posição vão para o fim. Também usado em *Criar com IA* (painel novo respeita as posições sugeridas).
+
+**(b) Gráficos adaptáveis** — ADR 0011.
+- Mínimo completo por tipo e mínimo absoluto 2×2 (validado no backend).
+- Visões compactas: linha → valor e tendência; barras → ranking; pizza → % em lista; tabela → lista curta; medidor → % com barra.
+- Editor troca a visão ao vivo durante o redimensionamento, mostra a etiqueta "compacta" e salva o layout ao soltar (sem botão *Salvar layout*).
+
+**Verificado:** 126 testes de backend (layout no prompt, saneamento de `layout_changes`, posição de novos, 422 abaixo de 2×2), 36 de frontend (visões compactas, `arrange`, prévia e aplicação PUT→POST), E2E (aceitar mudança de layout no editor; redimensionar até a visão compacta, salvar sozinho e manter após recarregar), capturas no editor e na visualização.
+
+**Não verificado:** como o modelo real da Groq propõe mudanças de layout (a Groq falsa é determinística); comportamento na TV física.
+
+## 18. Ajustes após o primeiro teste com a Groq real (v0.5)
+
+**Relato:** no painel *b2b invoices*, pedindo "mais um KPI", a IA sugeriu "Custo Total" e o usuário entendeu como repetido; a prévia do layout ficou ilegível.
+
+**Diagnóstico (banco e auditoria):** "Custo Total" (soma de `cost`) não existia no painel, mas é dedutível de receita − margem. A detecção de repetidos só pegava configuração idêntica (outro período ou alias passava). A prévia usava cores com opacidade (`bg-line/70`), que não funcionam com as cores do tema: os blocos ficavam sem fundo.
+
+**Correções:**
+- Repetido = mesma informação (família do gráfico + medidas + recorte + granularidade + filtros), com o motivo citando o gráfico existente; também pega repetição dentro da própria resposta.
+- O prompt recebe, por gráfico existente, o que ele mostra (`mostra`: "soma de revenue por segment") e a regra de não sugerir métrica dedutível.
+- Sem nenhuma sugestão nova, os ajustes de layout somem e a tela diz que tudo já está no painel.
+- Prévia refeita: título "Como o painel vai ficar", blocos com fundo e borda sólidos, etiqueta "NOVO" e legenda com amostras de cor.
+
+**Verificado:** 128 testes de backend, 36 de frontend, E2E da IA (4/4) e capturas da prévia e do caso "tudo repetido".

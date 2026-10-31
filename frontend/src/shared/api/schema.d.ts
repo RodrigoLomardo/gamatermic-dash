@@ -1380,6 +1380,17 @@ export interface components {
             /** File */
             file: string;
         };
+        /** Box */
+        Box: {
+            /** H */
+            h: number;
+            /** W */
+            w: number;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
         /** ChangePasswordIn */
         ChangePasswordIn: {
             /** Current Password */
@@ -1909,6 +1920,27 @@ export interface components {
             /** Source Column */
             source_column: string;
         };
+        /**
+         * LayoutChange
+         * @description Mudanca sugerida num grafico que ja esta no painel, para abrir espaco ou melhorar a leitura.
+         */
+        LayoutChange: {
+            after: components["schemas"]["Box"];
+            before: components["schemas"]["Box"];
+            /** Compact */
+            compact: boolean;
+            /** Reason */
+            reason: string;
+            /** Title */
+            title: string;
+            /** Type */
+            type: string;
+            /**
+             * Widget Id
+             * Format: uuid
+             */
+            widget_id: string;
+        };
         /** LayoutItem */
         LayoutItem: {
             /** H */
@@ -2166,6 +2198,10 @@ export interface components {
             };
             /** W */
             w: number;
+            /** X */
+            x?: number | null;
+            /** Y */
+            y?: number | null;
         };
         /** ProposalsIn */
         ProposalsIn: {
@@ -2196,6 +2232,11 @@ export interface components {
             discarded: components["schemas"]["Discarded"][];
             /** Explanation */
             explanation: string;
+            /**
+             * Layout Changes
+             * @default []
+             */
+            layout_changes: components["schemas"]["LayoutChange"][];
             /** Proposals */
             proposals: components["schemas"]["Proposal"][];
             usage: components["schemas"]["Usage"];

@@ -12,7 +12,7 @@ from app.core.events import notify
 from app.modules.audit import service as audit
 from app.modules.dashboards import schemas as sc
 from app.modules.dashboards.models import Dashboard, Widget
-from app.modules.dashboards.widget_types import validate_widget
+from app.modules.dashboards.widget_types import check_size, validate_widget
 from app.modules.datasets.models import Dataset
 from app.modules.query import executor
 from app.modules.query.compiler import FieldMeta
@@ -183,6 +183,7 @@ async def add_widget(session: AsyncSession, request: Request, p: Principal, did:
     await _validate_widget_cfg(session, p, body.type, body.dataset_id, body.query_config, body.viz_config)
     if body.x + body.w > d.grid_cols:
         raise Unprocessable("O widget ultrapassa a grade de 12 colunas.", code="invalid_layout")
+    check_size(body.type, body.w, body.h)
     w = Widget(dashboard_id=d.id, **body.model_dump())
     session.add(w)
     await session.flush()
@@ -235,6 +236,7 @@ async def put_layout(session: AsyncSession, request: Request, p: Principal, did:
             raise NotFound("Widget do layout não pertence à dashboard.")
         if it.x + it.w > d.grid_cols:
             raise Unprocessable("O widget ultrapassa a grade de 12 colunas.", code="invalid_layout")
+        check_size(w.type, it.w, it.h)
         w.x, w.y, w.w, w.h = it.x, it.y, it.w, it.h
     await _touch(session, d, p)
     await audit.record(session, "dashboard.layout.changed", request=request, principal=p, resource_type="dashboard", resource_id=d.id)

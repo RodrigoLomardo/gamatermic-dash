@@ -60,3 +60,12 @@ def test_schema_is_strict_compatible():
             for v in node:
                 walk(v)
     walk(RESPONSE_SCHEMA)
+
+
+def test_placement_is_sanitized_and_new_charts_start_full_size():
+    # linha pedida 2x1 em x=11: sobe para o minimo completo (4x3) e cabe na grade
+    w = to_widget(raw(type="line", dimensions=[], x=11, y=-3, w=2, h=1), FIELDS, LABELS, "data")
+    assert (w["x"], w["y"], w["w"], w["h"]) == (8, 0, 4, 3)
+    # sem posicao: o frontend encaixa abaixo, com o tamanho padrao do tipo
+    w = to_widget(raw(), FIELDS, LABELS, "data")
+    assert (w["x"], w["y"], w["w"], w["h"]) == (None, None, 6, 4)
