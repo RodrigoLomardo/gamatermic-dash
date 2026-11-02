@@ -27,6 +27,10 @@ Itens de decisão do plano (§10, metas **propostas**, sem baseline): ≥ 80% v�
 - **Latência:** respostas sem espera de cota levam 1–2 s (p50 ≈ 1,3 s). O p95 medido (> 40 s) é quase todo **espera de 429** da conta gratuita (1 caso de 683 s). Não dá para afirmar o p95 do produto até rodar com cota própria.
 - **Variação entre rodadas (3 repetições):** não medida de forma completa. Observado: a mesma pergunta (Q1) passou na rodada 2 e caiu no fallback na rodada 3.
 
+### Rodada 4 — prompt enxuto (economia de tokens)
+
+12 perguntas representativas (S, P e U), ritmo de 18 s: **100% válidas, 83% corretas (10/12), p95 1,6 s, 0 respostas 429, 2.212 tokens/pergunta** (antes ≈ 4.000). As 2 falhas: Q1 (o gráfico "por ano" não satisfez a regra do verificador) e Q27 (recusou o prazo ponderado, que é limitação conhecida; a rodada 2 mostrava a média simples). Q14 passou a responder. Amostra pequena: serve para mostrar que **cortar ~46% dos tokens não degradou a qualidade**, não para novo veredito.
+
 ## O que o modelo faz bem / mal
 
 Bem: faturamento por período, ticket médio ao longo do tempo, pedidos por mês, ranking top N, participação por empresa/segmento/forma de pagamento,

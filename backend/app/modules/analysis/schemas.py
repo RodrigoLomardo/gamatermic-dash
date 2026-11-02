@@ -186,3 +186,4 @@ class AnalysisChatOut(BaseModel):
     usage: AnalysisChatUsage | None = None
     valid: bool = True  # False = nem apos o reparo houve consulta valida (resposta generica)
     repaired: bool = False
+    cached: bool = False  # o modelo nao foi chamado (0 token); os numeros foram recalculados

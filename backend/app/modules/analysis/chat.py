@@ -5,7 +5,9 @@ dados, e nunca enviados ao modelo.
 """
 import hashlib
 import json
+import time
 import uuid
+from collections import OrderedDict
 from datetime import date
 from typing import Any
 
@@ -32,8 +34,15 @@ from app.modules.settings import service as settings
 
 log = get_logger("analysis.chat")
 MAX_DATASETS = 4
+MAX_OUT_TOKENS = 900  # a Groq reserva max_completion_tokens na cota por minuto: pedir 3000 para gastar ~300 bloqueia a pergunta seguinte
+CACHE_TTL, CACHE_MAX = 1800.0, 400
+_CACHE: OrderedDict[str, tuple[float, dict]] = OrderedDict()  # resposta BRUTA do modelo (nao o resultado): os numeros sao recalculados a cada vez
 OP_TXT = {"eq": "=", "neq": "≠", "in": "em", "gte": "≥", "lte": "≤", "between": "entre", "contains": "contém"}
 AGG_TXT = {"sum": "Soma de", "avg": "Média de", "count": "Contagem", "min": "Mínimo de", "max": "Máximo de", "count_distinct": "Distintos de"}
+
+
+def clear_cache() -> None:
+    _CACHE.clear()
 
 
 class _Ds:
@@ -126,7 +135,10 @@ def _period(raw: dict, fr: str, to: str, preset: str) -> dict | None:
 
 
 async def _build_chart(session: AsyncSession, x: _Ds, raw: dict, notes: list[str]) -> dict:
-    tw = {**raw, "filters": await _resolve_values(session, x, _raw_filters(raw.get("filters") or []), notes), "period_preset": None}
+    sort = raw.get("sort")
+    tw = {**raw, "filters": await _resolve_values(session, x, _raw_filters(raw.get("filters") or []), notes), "period_preset": None,
+          "sort_by": "time" if sort == "time" else "measure" if sort in ("asc", "desc") else None, "sort_dir": "asc" if sort in ("asc", "time") else "desc",
+          "format": _format(x, raw), "horizontal": raw.get("type") == "bar"}
     w = translate.to_widget(tw, x.fields, x.labels, x.ds.time_field)  # o periodo e aplicado abaixo (aceita datas absolutas)
     qc = w["query_config"]
     period = _period(raw, "period_from", "period_to", "period_preset")
@@ -137,6 +149,15 @@ async def _build_chart(session: AsyncSession, x: _Ds, raw: dict, notes: list[str
         qc["compare_to"] = "last_year"
     validate_widget(w["type"], qc, w["viz_config"], x.fields, x.ds.time_field)
     return w
+
+
+def _format(x: _Ds, raw: dict) -> str:
+    """Formato do valor deduzido da primeira medida (o schema nao pede ao modelo: economiza tokens)."""
+    m = next(iter(raw.get("measures") or []), None) or {}
+    if m.get("agg") in ("count", "count_distinct"):
+        return "integer"
+    meta = x.fields.get(str(m.get("field") or ""))
+    return "currency" if meta is not None and meta.data_type == "decimal" else "number"
 
 
 def _describe(w: dict, x: _Ds) -> list[str]:
@@ -188,12 +209,23 @@ async def answer(session: AsyncSession, p: Principal, rt: settings.AiRuntime, ds
     """Nucleo do chat (sem HTTP): prompt -> Groq -> acao validada -> consulta executada. Usado pelo endpoint e pela POC."""
     messages = prompt.build_messages(ctx, message, history)
     usage = {"prompt_tokens": 0, "completion_tokens": 0}
+    ckey = None
+    if not history:  # pergunta isolada: mesma pergunta + mesmos campos + mesma tela + mesmo dia = mesma consulta; so os numeros sao recalculados
+        ckey = hashlib.sha1(json.dumps([prompt.PROMPT_VERSION, rt.model, ctx["hoje"], prompt._fields_block(ctx), ctx["tela_atual"], " ".join(message.casefold().split())], ensure_ascii=False).encode()).hexdigest()
+        if (hit := _CACHE.get(ckey)) and time.monotonic() - hit[0] < CACHE_TTL:
+            hit_notes: list[str] = []
+            if (cached := await _finish(session, p, dss, hit[1], hit_notes)) is not None:
+                _CACHE.move_to_end(ckey)
+                cached.notes = hit_notes + cached.notes
+                cached.cached = True
+                cached.usage = sc.AnalysisChatUsage(model=rt.model)
+                return cached
 
     async def call(msgs: list[dict]) -> dict:
         try:
-            out, u = await groq_client.chat_json(rt.api_key or "", rt.model, msgs, prompt.RESPONSE_SCHEMA, name="analysis_chat", max_tokens=3000)
+            out, u = await groq_client.chat_json(rt.api_key or "", rt.model, msgs, prompt.RESPONSE_SCHEMA, name="analysis_chat", max_tokens=MAX_OUT_TOKENS)
         except groq_client.AiBadOutput:
-            out, u = await groq_client.chat_json(rt.api_key or "", rt.model, msgs, prompt.RESPONSE_SCHEMA, name="analysis_chat", max_tokens=3000)
+            out, u = await groq_client.chat_json(rt.api_key or "", rt.model, msgs, prompt.RESPONSE_SCHEMA, name="analysis_chat", max_tokens=MAX_OUT_TOKENS)
         usage["prompt_tokens"] += int(u.get("prompt_tokens") or 0)
         usage["completion_tokens"] += int(u.get("completion_tokens") or 0)
         return out
@@ -216,6 +248,10 @@ async def answer(session: AsyncSession, p: Principal, rt: settings.AiRuntime, ds
         out = sc.AnalysisChatOut(action="explain_unsupported", message="Não consegui montar essa consulta com os campos disponíveis. Tente reformular ou escolha uma das sugestões.",
                                  suggestions=[str(s)[:160] for s in (raw.get("suggestions") or [])[:3]], summary="(sem resposta)", valid=False)
     out.repaired = repaired
+    if ckey and out.valid:
+        _CACHE[ckey] = (time.monotonic(), raw)
+        while len(_CACHE) > CACHE_MAX:
+            _CACHE.popitem(last=False)
     out.notes = notes + out.notes
     out.usage = sc.AnalysisChatUsage(model=rt.model, **usage)
     return out
@@ -256,7 +292,7 @@ async def _finish(session: AsyncSession, p: Principal, dss: list[_Ds], raw: dict
         except DomainError as e:
             notes.append(e.detail)
             return None
-        per = _period(raw, "view_period_from", "view_period_to", "view_period_preset")
+        per = _period(raw, "view_from", "view_to", "_")
         ap = _apply(None, flt, per)
         if ap is None:
             return None

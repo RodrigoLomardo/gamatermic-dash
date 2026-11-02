@@ -270,6 +270,11 @@
        }
       ]
      },
+     "cached": {
+      "default": false,
+      "title": "Cached",
+      "type": "boolean"
+     },
      "interpretation": {
       "default": [],
       "items": {

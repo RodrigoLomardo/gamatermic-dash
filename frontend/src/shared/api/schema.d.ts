@@ -1550,6 +1550,11 @@ export interface components {
             action: "show_chart" | "apply_view" | "explain_unsupported" | "clarify";
             apply?: components["schemas"]["AnalysisChatApply"] | null;
             /**
+             * Cached
+             * @default false
+             */
+            cached: boolean;
+            /**
              * Interpretation
              * @default []
              */

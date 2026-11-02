@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/app/auth";
 import { IconPlus, IconSparkles, IconX } from "@/app/icons";
-import { S, ApiError, get, post } from "@/shared/api/http";
+import { S, get, post } from "@/shared/api/http";
 import { Button, cx, useToasts } from "@/shared/ui/ui";
 import type { Filter } from "../dashboards/useDashboardData";
 import { WidgetCard } from "../widgets/WidgetCard";
@@ -89,7 +89,7 @@ export function ChatPanel({ dashId, view, onApply, onClose }: { dashId: string; 
       return post<Out>(`/dashboards/${dashId}/analysis/chat`, { message: q, history, view: { period: periodApi(view.period), filters: toApiFilters(view.filters) } });
     },
     onSuccess: (out) => setMsgs((m) => [...m, { id: ++next.current, role: "assistant", text: out.message, out }]),
-    onError: (e: Error) => setMsgs((m) => [...m, { id: ++next.current, role: "assistant", error: true, text: e instanceof ApiError && e.status === 429 ? "Muitas perguntas seguidas. Aguarde alguns segundos." : e.message }]),
+    onError: (e: Error) => setMsgs((m) => [...m, { id: ++next.current, role: "assistant", error: true, text: e.message }]),
   });
   useEffect(() => { if (scroller.current) scroller.current.scrollTop = scroller.current.scrollHeight; }, [msgs.length, send.isPending]); // rolagem suave vem do CSS
 
