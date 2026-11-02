@@ -5,7 +5,7 @@ import { useAuth } from "@/app/auth";
 import { IconArrowUpRight, IconPlus, IconSearch, IconSparkles } from "@/app/icons";
 import { S, del, get, post } from "@/shared/api/http";
 import { fmtDateTime } from "@/shared/lib/format";
-import { Button, Empty, ErrorBox, Spinner, cx, useToasts } from "@/shared/ui/ui";
+import { Button, Empty, ErrorBox, Modal, Spinner, cx, useToasts } from "@/shared/ui/ui";
 import { CardMenu } from "./CardMenu";
 import { DashPreview } from "./DashPreview";
 import { dashboardLink, usePublishActions, viewLink } from "./PublishControl";
@@ -18,12 +18,13 @@ function DashCard({ d, i, sector }: { d: Summary; i: number; sector?: string }) 
   const { can } = useAuth(); const nav = useNavigate(); const qc = useQueryClient(); const toast = useToasts((s) => s.push);
   const { busy, setOnline, copy } = usePublishActions(d.id, d.name);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [askDelete, setAskDelete] = useState(false); const [deleting, setDeleting] = useState(false);
   const online = d.status === "published";
   const dup = async () => { try { const n = await post<S["DashboardOut"]>(`/dashboards/${d.id}/duplicate`); toast("Dashboard duplicada."); nav(`/dashboards/${n.id}/editar`); } catch (e) { toast((e as Error).message, "danger"); } };
   const remove = async () => {
-    if (!confirm(`Excluir "${d.name}"? Os widgets serão apagados e ela sai das playlists das TVs. Esta ação é irreversível.`)) return;
-    try { await del(`/dashboards/${d.id}`); toast(`"${d.name}" excluída.`); await qc.invalidateQueries({ queryKey: ["dashboards"] }); await qc.invalidateQueries({ queryKey: ["playlists"] }); }
-    catch (e) { toast((e as Error).message, "danger"); }
+    setDeleting(true);
+    try { await del(`/dashboards/${d.id}`); toast(`"${d.name}" excluída.`); setAskDelete(false); await qc.invalidateQueries({ queryKey: ["dashboards"] }); await qc.invalidateQueries({ queryKey: ["playlists"] }); }
+    catch (e) { toast((e as Error).message, "danger"); } finally { setDeleting(false); }
   };
   const toggle = () => {
     if (online && !confirm(`Tirar "${d.name}" do ar? Ele some das listas dos gestores e as TVs passam a pular este painel.`)) return;
@@ -48,9 +49,22 @@ function DashCard({ d, i, sector }: { d: Summary; i: number; sector?: string }) 
           <Link to={`/dashboards/${d.id}`} className="inline-flex items-center gap-2 text-[15px] font-bold text-ink transition hover:text-accent-dark hover:gap-3">Abrir dashboard <IconArrowUpRight /></Link>
           <CardMenu id={d.id} name={d.name} online={online} busy={busy} canEdit={can("dashboard:edit")} canCreate={can("dashboard:create")} canDelete={can("dashboard:delete")}
             onDuplicate={dup} onToggleOnline={toggle} onCopyLink={() => copy(dashboardLink(d.id), "Link do painel")} onCopyViewLink={() => copy(viewLink(d.id), "Link de visualização")}
-            onDelete={remove} onOpenChange={setMenuOpen} />
+            onDelete={() => setAskDelete(true)} onOpenChange={setMenuOpen} />
         </div>
       </div>
+      <Modal open={askDelete} title="Excluir dashboard?" onClose={() => !deleting && setAskDelete(false)}>
+        <p className="text-sm text-ink-soft">Você vai excluir <strong className="text-ink">“{d.name}”</strong>.</p>
+        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-ink-soft">
+          <li>Os {d.widget_count} widgets são apagados.</li>
+          <li>O painel sai das playlists das TVs.</li>
+          <li>Links compartilhados deixam de funcionar.</li>
+        </ul>
+        <p className="mt-3 text-sm font-semibold text-danger">Esta ação é irreversível.</p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="ghost" autoFocus disabled={deleting} onClick={() => setAskDelete(false)}>Cancelar</Button>
+          <Button variant="danger" disabled={deleting} onClick={remove}>{deleting ? "Excluindo…" : "Excluir definitivamente"}</Button>
+        </div>
+      </Modal>
     </article>
   );
 }

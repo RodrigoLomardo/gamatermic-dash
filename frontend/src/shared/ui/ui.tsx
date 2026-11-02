@@ -1,4 +1,5 @@
 import { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes, useEffect, useId, useRef } from "react";
+import { createPortal } from "react-dom";
 import { create } from "zustand";
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
@@ -82,7 +83,8 @@ export function Modal({ open, title, onClose, children, wide }: { open: boolean;
     return () => { window.removeEventListener("keydown", key); prev?.focus(); };
   }, [open, onClose]);
   if (!open) return null;
-  return (
+  // portal: ancestrais com transform (cards com hover) prendem o position:fixed ao proprio elemento
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={title}
         className={cx("mt-10 w-full rounded-xl bg-panel shadow-2xl", wide ? "max-w-3xl" : "max-w-lg")}>
@@ -92,7 +94,8 @@ export function Modal({ open, title, onClose, children, wide }: { open: boolean;
         </header>
         <div className="p-5">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
