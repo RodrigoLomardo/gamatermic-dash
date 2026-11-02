@@ -58,5 +58,5 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: cd frontend && npm ci && npm audit --omit=dev --audit-level=high
-      - uses: aquasecurity/trivy-action@0.24.0
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with: { scan-type: fs, scan-ref: ., severity: "HIGH,CRITICAL", exit-code: "1", ignore-unfixed: true }
