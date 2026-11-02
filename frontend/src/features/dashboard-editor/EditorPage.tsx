@@ -85,7 +85,14 @@ export function EditorPage() {
     } else apply(await patch<Dash>(`/dashboards/${id}/widgets/${selected}`, draft, hdr()));
     setSelected(null); setDraft(null); toast("Widget salvo.");
   });
-  const removeWidget = (wid: string) => guarded(async () => { if (confirm("Remover este widget?")) { apply(await del<Dash>(`/dashboards/${id}/widgets/${wid}`, hdr())); setSelected(null); } });
+  const [askRemove, setAskRemove] = useState<string | null>(null); const [removing, setRemoving] = useState(false);
+  const closeRemove = useCallback(() => setAskRemove(null), []); // estavel: o Modal refoca a cada troca de onClose
+  const removeWidget = async () => {
+    if (!askRemove) return;
+    setRemoving(true);
+    await guarded(async () => { apply(await del<Dash>(`/dashboards/${id}/widgets/${askRemove}`, hdr())); setSelected(null); setAskRemove(null); toast("Widget removido."); });
+    setRemoving(false);
+  };
 
   if (dash.isLoading || datasets.isLoading || !meta) return <Spinner />;
   if (dash.error) return <ErrorBox error={dash.error} />;
@@ -129,13 +136,21 @@ export function EditorPage() {
             <WidgetCard widget={w} result={results[w.id]} size={live[w.id] ?? w} showViewHint />
             <div className="no-drag absolute right-2 top-2 flex gap-1">
               <button className="rounded bg-panel/90 px-2 py-0.5 text-xs font-semibold shadow hover:bg-brand-soft" onClick={() => edit(w)}>Editar</button>
-              <button aria-label={`Remover ${w.title}`} className="rounded bg-panel/90 px-2 py-0.5 text-xs font-semibold text-danger shadow hover:bg-brand-soft" onClick={() => removeWidget(w.id)}>✕</button>
+              <button aria-label={`Remover ${w.title}`} className="rounded bg-panel/90 px-2 py-0.5 text-xs font-semibold text-danger shadow hover:bg-brand-soft" onClick={() => setAskRemove(w.id)}>✕</button>
             </div>
           </div>
         ))}
       </RGL>
       <Modal open={!!draft} wide title={selected === "new" ? "Novo widget" : "Editar widget"} onClose={() => { setSelected(null); setDraft(null); }}>
         {draft && <WidgetConfigForm draft={draft} onChange={setDraft} onApply={saveWidget} applyLabel="Salvar widget" />}
+      </Modal>
+      <Modal open={!!askRemove} title="Remover widget?" onClose={() => !removing && closeRemove()}>
+        <p className="text-sm text-ink-soft">Você vai remover <strong className="text-ink">“{widgets.find((w) => w.id === askRemove)?.title}”</strong> deste painel.</p>
+        <p className="mt-3 text-sm text-ink-soft">O gráfico some do painel e das TVs que o exibem. Os dados do dataset não são afetados.</p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="ghost" autoFocus disabled={removing} onClick={closeRemove}>Cancelar</Button>
+          <Button variant="danger" disabled={removing} onClick={removeWidget}>{removing ? "Removendo…" : "Remover widget"}</Button>
+        </div>
       </Modal>
       <Modal open={aiOpen} wide title="Gráficos com IA" onClose={closeAi}>
         <AiWidgetsPanel dashboardId={id!} widgets={widgets} version={version} defaultPeriod={meta.period} datasets={datasets.data ?? []}
