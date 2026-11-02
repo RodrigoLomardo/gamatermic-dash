@@ -118,6 +118,7 @@ class DataRequest(BaseModel):
     period: Period | None = None
     filters: list[Filter] = []
     overrides: dict[uuid.UUID, WidgetOverride] = Field(default={}, max_length=40)
+    force_period: bool = False  # analise: o periodo escolhido vale ate para widgets com periodo proprio
 
 
 class PreviewRequest(BaseModel):

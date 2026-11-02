@@ -110,13 +110,13 @@ async def search(session: AsyncSession, p: Principal, did: uuid.UUID, q: str) ->
 async def query(session: AsyncSession, p: Principal, did: uuid.UUID, body: sc.AnalysisQueryIn) -> dict:
     d = await _dashboard(session, p, did)
     w = await _widget(session, d, body.widget_id)
-    return await dash.widget_result(session, p, w, body.period, body.filters, d.default_period, body.override)
+    return await dash.widget_result(session, p, w, body.period, body.filters, d.default_period, body.override, body.force_period)
 
 
 # ---------------- registros (drill-through) e exportacao ----------------
 async def _records_spec(session: AsyncSession, p: Principal, d: Dashboard, w: Widget, period: Period | None, filters: list[Filter],
-                        columns: list[str], sort: SortSpec | None) -> tuple[Dataset, QuerySpec, list[sc.AnalysisColumnOut]]:
-    ds, spec, _ = await dash.effective_spec(session, p, w, period, filters, d.default_period)  # mesmos numeros do grafico
+                        columns: list[str], sort: SortSpec | None, force_period: bool = False) -> tuple[Dataset, QuerySpec, list[sc.AnalysisColumnOut]]:
+    ds, spec, _ = await dash.effective_spec(session, p, w, period, filters, d.default_period, None, force_period)  # mesmos numeros do grafico
     await require_can(session, p, "dataset:view", "dataset", ds.id, ds.sector_id, "view")
     fs = await repo.list_fields(session, ds.id)
     by_name = {f.name: f for f in fs}
@@ -135,7 +135,7 @@ async def _records_spec(session: AsyncSession, p: Principal, d: Dashboard, w: Wi
 async def records(session: AsyncSession, p: Principal, did: uuid.UUID, body: sc.AnalysisRecordsIn) -> sc.AnalysisRecordsOut:
     d = await _dashboard(session, p, did)
     w = await _widget(session, d, body.widget_id)
-    ds, spec, meta = await _records_spec(session, p, d, w, body.period, body.filters, body.columns, body.sort)
+    ds, spec, meta = await _records_spec(session, p, d, w, body.period, body.filters, body.columns, body.sort, body.force_period)
     mask = not p.has("dataset:manage")
     page = await executor.fetch_rows(session, ds.id, spec.model_copy(update={"limit": body.limit + 1}), mask_pii=mask, offset=body.offset)
     count = await executor.execute(session, ds.id, spec.model_copy(update={"columns": [], "measures": [Measure(agg="count", alias="n")], "sort": []}), mask_pii=mask)
@@ -147,7 +147,7 @@ async def records(session: AsyncSession, p: Principal, did: uuid.UUID, body: sc.
 async def export_csv(session: AsyncSession, request: Request, p: Principal, did: uuid.UUID, body: sc.AnalysisExportIn) -> Response:
     d = await _dashboard(session, p, did)
     w = await _widget(session, d, body.widget_id)
-    ds, spec, meta = await _records_spec(session, p, d, w, body.period, body.filters, body.columns, body.sort)
+    ds, spec, meta = await _records_spec(session, p, d, w, body.period, body.filters, body.columns, body.sort, body.force_period)
     mask = not p.has("dataset:manage")
     out: list[list] = []
     while len(out) < EXPORT_MAX_ROWS:

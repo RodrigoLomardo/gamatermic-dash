@@ -17,12 +17,12 @@ export function useDashboard(id: string | undefined) {
   return useQuery({ queryKey: ["dashboard", id], enabled: !!id, queryFn: () => get<S["DashboardOut"]>(`/dashboards/${id}`) });
 }
 
-export function useDashboardData(id: string | undefined, period: PeriodSel | null, filters: Filter[], refreshSeconds: number, overrides?: Record<string, Override>) {
+export function useDashboardData(id: string | undefined, period: PeriodSel | null, filters: Filter[], refreshSeconds: number, overrides?: Record<string, Override>, forcePeriod = false) {
   return useQuery({
-    queryKey: ["dashboard-data", id, period, filters, overrides ?? null],
+    queryKey: ["dashboard-data", id, period, filters, overrides ?? null, forcePeriod],
     enabled: !!id,
     refetchInterval: Math.max(15, refreshSeconds) * 1000,
     placeholderData: (prev) => prev,
-    queryFn: () => post<DashboardData>(`/dashboards/${id}/data`, { period, filters, overrides: overrides ?? {} }),
+    queryFn: () => post<DashboardData>(`/dashboards/${id}/data`, { period, filters, overrides: overrides ?? {}, force_period: forcePeriod }),
   });
 }

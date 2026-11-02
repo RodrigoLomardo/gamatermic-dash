@@ -31,7 +31,7 @@ export function ExpandedWidget({ id, widget, initial, from, period, filters, fie
   const override = { ...(group ? { group_by: group } : {}), ...(initial?.granularity ? { granularity: initial.granularity } : {}), ...(limit ? { limit } : {}) };
   const q = useQuery({
     queryKey: ["analysis-expanded", id, widget.id, period, filters, override], placeholderData: (p) => p,
-    queryFn: () => post<WidgetResult>(`/dashboards/${id}/analysis/query`, { widget_id: widget.id, period, filters, override: Object.keys(override).length ? override : null }),
+    queryFn: () => post<WidgetResult>(`/dashboards/${id}/analysis/query`, { widget_id: widget.id, period, force_period: period !== null, filters, override: Object.keys(override).length ? override : null }),
   });
   const synthetic = useMemo(() => ({
     ...widget, type, query_config: { ...qc, ...(group ? { dimensions: [group] } : {}), ...(initial?.granularity && qc.time ? { time: { ...(qc.time as object), granularity: initial.granularity } } : {}) },
@@ -64,7 +64,7 @@ export function ExpandedWidget({ id, widget, initial, from, period, filters, fie
   }, [close]);
 
   const exportCsv = async () => {
-    try { await downloadCsv(`/dashboards/${id}/analysis/export`, { widget_id: widget.id, period, filters }, `analise-${widget.title.toLowerCase().replace(/\W+/g, "-")}.csv`); toast("Exportação concluída."); }
+    try { await downloadCsv(`/dashboards/${id}/analysis/export`, { widget_id: widget.id, period, force_period: period !== null, filters }, `analise-${widget.title.toLowerCase().replace(/\W+/g, "-")}.csv`); toast("Exportação concluída."); }
     catch (e) { toast((e as Error).message, "danger"); }
   };
   return createPortal(

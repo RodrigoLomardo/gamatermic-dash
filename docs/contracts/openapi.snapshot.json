@@ -248,6 +248,11 @@
       "title": "Filters",
       "type": "array"
      },
+     "force_period": {
+      "default": false,
+      "title": "Force Period",
+      "type": "boolean"
+     },
      "period": {
       "anyOf": [
        {
@@ -388,6 +393,11 @@
       "title": "Filters",
       "type": "array"
      },
+     "force_period": {
+      "default": false,
+      "title": "Force Period",
+      "type": "boolean"
+     },
      "override": {
       "anyOf": [
        {
@@ -440,6 +450,11 @@
       "maxItems": 20,
       "title": "Filters",
       "type": "array"
+     },
+     "force_period": {
+      "default": false,
+      "title": "Force Period",
+      "type": "boolean"
      },
      "limit": {
       "default": 50,
@@ -1263,6 +1278,11 @@
       },
       "title": "Filters",
       "type": "array"
+     },
+     "force_period": {
+      "default": false,
+      "title": "Force Period",
+      "type": "boolean"
      },
      "overrides": {
       "additionalProperties": {

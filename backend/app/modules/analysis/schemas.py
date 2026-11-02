@@ -66,6 +66,7 @@ class AnalysisColumnOut(BaseModel):
 class AnalysisQueryIn(BaseModel):
     widget_id: uuid.UUID
     period: Period | None = None
+    force_period: bool = False
     filters: list[Filter] = Field(default=[], max_length=20)
     override: WidgetOverride | None = None
 
@@ -73,6 +74,7 @@ class AnalysisQueryIn(BaseModel):
 class AnalysisRecordsIn(BaseModel):
     widget_id: uuid.UUID
     period: Period | None = None
+    force_period: bool = False
     filters: list[Filter] = Field(default=[], max_length=20)
     columns: list[Name] = Field(default=[], max_length=12)
     sort: SortSpec | None = None
@@ -92,6 +94,7 @@ class AnalysisRecordsOut(BaseModel):
 class AnalysisExportIn(BaseModel):
     widget_id: uuid.UUID
     period: Period | None = None
+    force_period: bool = False
     filters: list[Filter] = Field(default=[], max_length=20)
     columns: list[Name] = Field(default=[], max_length=12)
     sort: SortSpec | None = None

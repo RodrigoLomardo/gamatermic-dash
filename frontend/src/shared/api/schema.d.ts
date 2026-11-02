@@ -1494,6 +1494,11 @@ export interface components {
              * @default []
              */
             filters: components["schemas"]["Filter"][];
+            /**
+             * Force Period
+             * @default false
+             */
+            force_period: boolean;
             period?: components["schemas"]["Period"] | null;
             sort?: components["schemas"]["SortSpec"] | null;
             /**
@@ -1553,6 +1558,11 @@ export interface components {
              * @default []
              */
             filters: components["schemas"]["Filter"][];
+            /**
+             * Force Period
+             * @default false
+             */
+            force_period: boolean;
             override?: components["schemas"]["WidgetOverride"] | null;
             period?: components["schemas"]["Period"] | null;
             /**
@@ -1573,6 +1583,11 @@ export interface components {
              * @default []
              */
             filters: components["schemas"]["Filter"][];
+            /**
+             * Force Period
+             * @default false
+             */
+            force_period: boolean;
             /**
              * Limit
              * @default 50
@@ -1869,6 +1884,11 @@ export interface components {
              * @default []
              */
             filters: components["schemas"]["Filter"][];
+            /**
+             * Force Period
+             * @default false
+             */
+            force_period: boolean;
             /**
              * Overrides
              * @default {}

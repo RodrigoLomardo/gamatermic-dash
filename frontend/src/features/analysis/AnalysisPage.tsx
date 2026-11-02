@@ -63,7 +63,7 @@ export function AnalysisPage() {
   const plan = useMemo(() => planOverrides(widgets, view.filters, (w) => (w.dataset_id ? timeByDs.get(w.dataset_id) : undefined)), [widgets, view.filters, timeByDs]);
   const apiFilters = useMemo(() => toApiFilters(view.filters), [view.filters]);
   const period: PeriodSel | null = view.period;
-  const data = useDashboardData(id, period, apiFilters, dash.data?.refresh_interval_seconds ?? 60, plan.overrides);
+  const data = useDashboardData(id, period, apiFilters, dash.data?.refresh_interval_seconds ?? 60, plan.overrides, period !== null); // periodo escolhido vale ate para widgets com periodo proprio
   const results = useMemo(() => Object.fromEntries((data.data?.widgets ?? []).map((r) => [r.widget_id, r])) as Record<string, WidgetResult>, [data.data]);
   const labelOf = (f: string) => fields.get(f)?.label ?? f;
 

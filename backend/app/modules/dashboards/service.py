@@ -254,9 +254,10 @@ def guard_pii_filters(filters: list[Filter], fields: dict[str, FieldMeta], p: Pr
             raise Unprocessable(f"Não é possível filtrar pelo campo pessoal '{f.field}'.", code="pii_filter")
 
 
-def _apply_overrides(w: Widget, spec: QuerySpec, period: Period | None, filters: list[Filter], fields: dict[str, FieldMeta], time_field: str | None) -> tuple[QuerySpec, list[str]]:
+def _apply_overrides(w: Widget, spec: QuerySpec, period: Period | None, filters: list[Filter], fields: dict[str, FieldMeta], time_field: str | None,
+                     force_period: bool = False) -> tuple[QuerySpec, list[str]]:
     upd: dict[str, Any] = {}
-    if period is not None and w.follows_global_period and time_field:
+    if period is not None and (w.follows_global_period or force_period) and time_field:
         upd["period"] = period
     compatible = [f for f in filters if f.field in fields]  # filtros globais so valem em widgets que tem o campo
     ignored = sorted({f.field for f in filters if f.field not in fields})
@@ -288,7 +289,7 @@ def apply_group(w: Widget, spec: QuerySpec, ov: "sc.WidgetOverride | None", fiel
 
 
 async def effective_spec(session: AsyncSession, p: Principal, w: Widget, period: Period | None, filters: list[Filter], default_period: str | None,
-                         ov: "sc.WidgetOverride | None" = None) -> tuple[Dataset, QuerySpec, list[str]]:
+                         ov: "sc.WidgetOverride | None" = None, force_period: bool = False) -> tuple[Dataset, QuerySpec, list[str]]:
     """Spec que o widget realmente executa: config salva + periodo/filtros globais + ajuste transitorio."""
     if w.dataset_id is None:
         raise Unprocessable("Widget sem dataset.", code="invalid_widget")
@@ -298,17 +299,17 @@ async def effective_spec(session: AsyncSession, p: Principal, w: Widget, period:
     fields = await executor.load_fields(session, ds.id)
     guard_pii_filters(filters, fields, p)
     spec = QuerySpec.model_validate(w.query_config)
-    if spec.period is None and ds.time_field and default_period and not (period and w.follows_global_period):
+    if spec.period is None and ds.time_field and default_period and not (period and (w.follows_global_period or force_period)):
         spec = spec.model_copy(update={"period": Period(mode="relative", preset=default_period)})  # type: ignore[arg-type]
-    spec, ignored = _apply_overrides(w, spec, period, filters, fields, ds.time_field)
+    spec, ignored = _apply_overrides(w, spec, period, filters, fields, ds.time_field, force_period)
     return ds, apply_group(w, spec, ov, fields, ds.time_field), ignored
 
 
 async def widget_result(session: AsyncSession, p: Principal, w: Widget, period: Period | None, filters: list[Filter], default_period: str | None,
-                        override: "sc.WidgetOverride | None" = None) -> dict:
+                        override: "sc.WidgetOverride | None" = None, force_period: bool = False) -> dict:
     base = {"widget_id": str(w.id), "type": w.type}
     try:
-        ds, spec, ignored = await effective_spec(session, p, w, period, filters, default_period, override)
+        ds, spec, ignored = await effective_spec(session, p, w, period, filters, default_period, override, force_period)
         res = await executor.execute(session, ds.id, spec, mask_pii=not p.has("dataset:manage"))
         return {**base, "data": res["rows"], "previous": res["previous_rows"], "dataset_version": res["dataset_version"],
                 "data_as_of": res["data_as_of"], "generated_at": res["generated_at"], "period": res["period"], "ignored_filters": ignored, "error": None}
@@ -320,18 +321,18 @@ async def widget_result(session: AsyncSession, p: Principal, w: Widget, period: 
 
 
 async def dashboard_data(session: AsyncSession, p: Principal, d: Dashboard, period: Period | None, filters: list[Filter],
-                         overrides: "dict[uuid.UUID, sc.WidgetOverride] | None" = None) -> dict:
+                         overrides: "dict[uuid.UUID, sc.WidgetOverride] | None" = None, force_period: bool = False) -> dict:
     widgets = await _widgets(session, d.id)
     results = []
     for w in widgets:  # sequencial: a sessao do request e compartilhada; cache evita custo repetido
-        results.append(await widget_result(session, p, w, period, filters, d.default_period, (overrides or {}).get(w.id)))
+        results.append(await widget_result(session, p, w, period, filters, d.default_period, (overrides or {}).get(w.id), force_period))
     return {"dashboard_id": str(d.id), "version": d.version, "widgets": results}
 
 
 async def data(session: AsyncSession, p: Principal, did: uuid.UUID, req: sc.DataRequest) -> dict:
     d = await get_dash(session, did)
     await check_view(session, p, d)
-    return await dashboard_data(session, p, d, req.period, req.filters, req.overrides)
+    return await dashboard_data(session, p, d, req.period, req.filters, req.overrides, req.force_period)
 
 
 async def preview_query(session: AsyncSession, p: Principal, req: sc.PreviewRequest) -> dict:

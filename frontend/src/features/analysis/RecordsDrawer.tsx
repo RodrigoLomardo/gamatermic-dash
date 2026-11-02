@@ -33,7 +33,7 @@ export function RecordsDrawer({ id, widget, period, filters, fields, onClose }: 
   const [cols, setCols] = useState<string[]>([]);
   const [pick, setPick] = useState(false); const [busy, setBusy] = useState(false);
   const pop = useRef<HTMLDivElement>(null); useOutside(pop, () => setPick(false), pick);
-  const base = { widget_id: widget.id, period, filters, columns: cols, sort };
+  const base = { widget_id: widget.id, period, force_period: period !== null, filters, columns: cols, sort };
   const q = useQuery({ queryKey: ["analysis-records", id, base, offset], placeholderData: (p) => p, queryFn: () => post<Rec>(`/dashboards/${id}/analysis/records`, { ...base, offset, limit: PAGE }) });
   const total = useCountUp(q.data?.total ?? 0);
   const shown = q.data?.columns ?? [];
@@ -41,7 +41,7 @@ export function RecordsDrawer({ id, widget, period, filters, fields, onClose }: 
   const toggleCol = (n: string) => { setOffset(0); setCols((c) => { const cur = c.length ? c : shown.map((x) => x.name); const nx = cur.includes(n) ? cur.filter((x) => x !== n) : [...cur, n].slice(0, 12); return nx.length ? nx : cur; }); };
   const exportCsv = async () => {
     setBusy(true);
-    try { await downloadCsv(`/dashboards/${id}/analysis/export`, { widget_id: widget.id, period, filters, columns: cols, sort }, `analise-${widget.title.toLowerCase().replace(/\W+/g, "-")}.csv`); toast("Exportação concluída."); }
+    try { await downloadCsv(`/dashboards/${id}/analysis/export`, { widget_id: widget.id, period, force_period: period !== null, filters, columns: cols, sort }, `analise-${widget.title.toLowerCase().replace(/\W+/g, "-")}.csv`); toast("Exportação concluída."); }
     catch (e) { toast((e as Error).message, "danger"); } finally { setBusy(false); }
   };
   const clickSort = (n: string) => { setOffset(0); setSort((s) => (s?.by !== n ? { by: n, dir: "desc" } : s.dir === "desc" ? { by: n, dir: "asc" } : null)); };

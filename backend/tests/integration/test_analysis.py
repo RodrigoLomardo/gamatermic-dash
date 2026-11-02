@@ -147,3 +147,19 @@ async def test_views_removed_with_dashboard_and_offline_hidden(client, admin):
     assert (await client.delete(f"{API}/dashboards/{did}", headers=admin)).status_code == 204
     async with get_sessionmaker()() as s:
         assert (await s.execute(text("SELECT count(*) FROM analysis_views"))).scalar() == 0
+
+
+async def test_force_period_applies_to_widgets_with_own_period(client, admin):
+    ds, did, wid = await _setup(client, admin)
+    own = {"measures": [{"agg": "count", "alias": "n"}], "period": {"mode": "relative", "preset": "all"}}
+    r = await client.post(f"{API}/dashboards/{did}/widgets", headers=admin, json={
+        "type": "kpi", "title": "Fixo", "dataset_id": ds["id"], "x": 6, "y": 0, "w": 3, "h": 3, "query_config": own, "viz_config": {}, "follows_global_period": False})
+    kid = r.json()["widgets"][-1]["id"]
+    jan = {"mode": "absolute", "from": "2026-01-01", "to": "2026-01-31"}
+
+    async def n(body):
+        res = (await client.post(f"{API}/dashboards/{did}/data", headers=admin, json=body)).json()["widgets"]
+        return next(w for w in res if w["widget_id"] == kid)["data"][0]["n"]
+
+    assert await n({"period": jan}) == 5  # sem force: o periodo proprio do widget vence
+    assert await n({"period": jan, "force_period": True}) == 2
