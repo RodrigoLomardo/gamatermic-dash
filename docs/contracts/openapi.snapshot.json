@@ -1544,6 +1544,18 @@
        }
       ],
       "title": "Refresh Interval Seconds"
+     },
+     "sector_id": {
+      "anyOf": [
+       {
+        "format": "uuid",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sector Id"
      }
     },
     "title": "DashboardPatch",

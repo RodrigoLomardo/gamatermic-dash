@@ -123,3 +123,37 @@ async def test_anonymize_and_export(client, admin):
 async def test_unknown_ids_404_not_500(client, admin):
     assert (await client.get(f"{API}/dashboards/{uuid.uuid4()}", headers=admin)).status_code == 404
     assert (await client.get(f"{API}/datasets/{uuid.uuid4()}", headers=admin)).status_code == 404
+
+
+async def test_move_dashboard_between_sectors(client, admin, seeded):
+    did = seeded["dashboards"][0]
+    novo = (await client.post(f"{API}/sectors", headers=admin, json={"slug": "financeiro", "name": "Financeiro"})).json()
+    r = await client.patch(f"{API}/dashboards/{did}", headers=admin, json={"sector_id": novo["id"]})
+    assert r.status_code == 200 and r.json()["sector_id"] == novo["id"]
+    # omitir sector_id não altera; null remove
+    assert (await client.patch(f"{API}/dashboards/{did}", headers=admin, json={"name": "Outro nome"})).json()["sector_id"] == novo["id"]
+    assert (await client.patch(f"{API}/dashboards/{did}", headers=admin, json={"sector_id": None})).json()["sector_id"] is None
+    assert (await client.patch(f"{API}/dashboards/{did}", headers=admin,
+                               json={"sector_id": "00000000-0000-0000-0000-000000000000"})).status_code == 422
+    actions = [x["action"] for x in (await client.get(f"{API}/audit-logs?action=dashboard.update&limit=50", headers=admin)).json()]
+    assert actions.count("dashboard.update") >= 3
+
+
+async def test_move_dashboard_requires_permission_on_target_sector(client, admin, seeded):
+    did = seeded["dashboards"][0]
+    novo = (await client.post(f"{API}/sectors", headers=admin, json={"slug": "financeiro", "name": "Financeiro"})).json()
+    role = (await client.post(f"{API}/roles", headers=admin, json={"name": "Editor de setor", "permissions": [
+        {"code": "dashboard:view", "scope": "granted"}, {"code": "dashboard:edit", "scope": "granted"},
+        {"code": "dashboard:create", "scope": "granted"}]})).json()
+    uid_ = await create_user("ed@gama.com.br", ["Visualizador"])
+    await client.put(f"{API}/users/{uid_}/roles", headers=admin, json={"ids": [role["id"]]})
+    h = await login(client, "ed@gama.com.br")
+    await client.put(f"{API}/resources/dashboard/{did}/grants", headers=admin,
+                     json={"grants": [{"subject_type": "user", "subject_id": str(uid_), "access_level": "edit"}]})
+    # edita o painel, mas não tem criação no setor de destino nem escopo global para remover o setor
+    assert (await client.patch(f"{API}/dashboards/{did}", headers=h, json={"sector_id": novo["id"]})).status_code == 403
+    assert (await client.patch(f"{API}/dashboards/{did}", headers=h, json={"sector_id": None})).status_code == 403
+    # com concessão de edição no setor de destino, a troca passa
+    await client.put(f"{API}/resources/sector/{novo['id']}/grants", headers=admin,
+                     json={"grants": [{"subject_type": "user", "subject_id": str(uid_), "access_level": "edit"}]})
+    assert (await client.patch(f"{API}/dashboards/{did}", headers=h, json={"sector_id": novo["id"]})).status_code == 200

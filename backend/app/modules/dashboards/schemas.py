@@ -57,6 +57,7 @@ class DashboardIn(BaseModel):
 class DashboardPatch(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=160)
     description: str | None = None
+    sector_id: uuid.UUID | None = None  # enviado como null remove o setor; omitido não altera
     refresh_interval_seconds: int | None = Field(default=None, ge=15, le=3600)
     default_period: str | None = None
 

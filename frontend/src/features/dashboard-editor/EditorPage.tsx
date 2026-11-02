@@ -41,6 +41,7 @@ export function EditorPage() {
   const { id } = useParams(); const qc = useQueryClient(); const toast = useToasts((s) => s.push);
   const dash = useQuery({ queryKey: ["editor", id], queryFn: () => get<Dash>(`/dashboards/${id}`), staleTime: 0 });
   const datasets = useQuery({ queryKey: ["datasets"], queryFn: () => get<Ds[]>("/datasets") });
+  const sectors = useQuery({ queryKey: ["sectors"], queryFn: () => get<S["SectorOut"][]>("/sectors"), staleTime: 5 * 60_000 });
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [version, setVersion] = useState(0);
   const [selected, setSelected] = useState<string | "new" | null>(null);
@@ -51,14 +52,14 @@ export function EditorPage() {
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const versionRef = useRef(0);
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
-  const [meta, setMeta] = useState<{ name: string; period: string; refresh: number } | null>(null);
+  const [meta, setMeta] = useState<{ name: string; period: string; refresh: number; sector: string } | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
   const closeAi = useCallback(() => setAiOpen(false), []); // estavel: o Modal refoca a cada troca de onClose
   const canAi = useAuth((s) => s.can)("dataset:query");
   const data = useDashboardData(id, null, [], 60);
   const results = useMemo(() => Object.fromEntries((data.data?.widgets ?? []).map((r) => [r.widget_id, r])), [data.data]);
 
-  useEffect(() => { if (dash.data) { setWidgets(dash.data.widgets); setVersion(dash.data.version); setMeta({ name: dash.data.name, period: dash.data.default_period, refresh: dash.data.refresh_interval_seconds }); versionRef.current = dash.data.version; } }, [dash.data]);
+  useEffect(() => { if (dash.data) { setWidgets(dash.data.widgets); setVersion(dash.data.version); setMeta({ name: dash.data.name, period: dash.data.default_period, refresh: dash.data.refresh_interval_seconds, sector: dash.data.sector_id ?? "" }); versionRef.current = dash.data.version; } }, [dash.data]);
   const hdr = () => ({ headers: { "If-Match": `"${versionRef.current}"` } });
   const apply = (d: Dash) => { setWidgets(d.widgets); setVersion(d.version); versionRef.current = d.version; setLive({}); qc.invalidateQueries({ queryKey: ["dashboard-data", id] }); };
   const guarded = async (fn: () => Promise<void>) => {
@@ -76,7 +77,7 @@ export function EditorPage() {
       catch (e) { setSaveState("error"); if (e instanceof ApiError && e.status === 409) setConflict(true); else toast(fail(e), "danger"); }
     });
   };
-  const saveMeta = () => guarded(async () => { apply(await patch<Dash>(`/dashboards/${id}`, { name: meta!.name, default_period: meta!.period, refresh_interval_seconds: meta!.refresh }, hdr())); toast("Configurações salvas."); });
+  const saveMeta = () => guarded(async () => { apply(await patch<Dash>(`/dashboards/${id}`, { name: meta!.name, default_period: meta!.period, refresh_interval_seconds: meta!.refresh, sector_id: meta!.sector || null }, hdr())); qc.invalidateQueries({ queryKey: ["dashboards"] }); toast("Configurações salvas."); });
   const saveWidget = () => guarded(async () => {
     if (!draft) return;
     if (selected === "new") {
@@ -117,8 +118,9 @@ export function EditorPage() {
         </div>
       </div>
       <Card title="Configurações" className="print:hidden">
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-5">
           <Field label="Nome">{(i) => <Input id={i} value={meta.name} onChange={(e) => setMeta({ ...meta, name: e.target.value })} />}</Field>
+          <Field label="Setor">{(i) => <Select id={i} value={meta.sector} onChange={(e) => setMeta({ ...meta, sector: e.target.value })}><option value="">Sem setor</option>{sectors.data?.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</Select>}</Field>
           <Field label="Período padrão">{(i) => <Select id={i} value={meta.period} onChange={(e) => setMeta({ ...meta, period: e.target.value })}>{PRESETS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</Select>}</Field>
           <Field label="Atualização (s)">{(i) => <Input id={i} type="number" min={15} value={meta.refresh} onChange={(e) => setMeta({ ...meta, refresh: Number(e.target.value) })} />}</Field>
           <div className="flex items-end"><Button variant="secondary" onClick={saveMeta}>Salvar configurações</Button></div>

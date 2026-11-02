@@ -14,6 +14,7 @@ from app.modules.dashboards import schemas as sc
 from app.modules.dashboards.models import Dashboard, Widget
 from app.modules.dashboards.widget_types import check_size, validate_widget
 from app.modules.datasets.models import Dataset
+from app.modules.iam.models import Sector
 from app.modules.query import executor
 from app.modules.query.compiler import FieldMeta
 from app.modules.query.spec import Filter, Period, QuerySpec
@@ -109,14 +110,30 @@ async def _touch(session: AsyncSession, d: Dashboard, p: Principal) -> None:
     await notify(session, {"type": "config_changed", "dashboard_id": str(d.id)})
 
 
+async def _check_sector_move(session: AsyncSession, p: Principal, target: uuid.UUID | None) -> None:
+    """Mover para um setor exige poder criar dashboards nele; deixar sem setor, escopo global de criação."""
+    if target is None:
+        if p.scope("dashboard:create") != "all":
+            raise Forbidden("Somente quem cria dashboards em qualquer setor pode remover o setor.")
+        return
+    if await session.get(Sector, target) is None:
+        raise Unprocessable("Setor não encontrado.")
+    await require_can(session, p, "dashboard:create", "sector", target, target, "edit")
+
+
 async def patch(session: AsyncSession, request: Request, p: Principal, did: uuid.UUID, body: sc.DashboardPatch, if_match: int | None) -> sc.DashboardOut:
     d = await _edit_target(session, p, did)
     _check_version(d, if_match)
     ch = body.model_dump(exclude_unset=True)
+    if "sector_id" in ch and ch["sector_id"] != d.sector_id:
+        await _check_sector_move(session, p, ch["sector_id"])
+        ch["previous_sector_id"] = d.sector_id
     for k, v in ch.items():
-        setattr(d, k, v)
+        if k != "previous_sector_id":
+            setattr(d, k, v)
     await _touch(session, d, p)
-    await audit.record(session, "dashboard.update", request=request, principal=p, resource_type="dashboard", resource_id=d.id, metadata=ch)
+    await audit.record(session, "dashboard.update", request=request, principal=p, resource_type="dashboard", resource_id=d.id,
+                       metadata={k: str(v) if isinstance(v, uuid.UUID) else v for k, v in ch.items()})
     await session.commit()
     return await dashboard_out(session, p, d)
 

@@ -2054,6 +2054,8 @@ export interface components {
             name?: string | null;
             /** Refresh Interval Seconds */
             refresh_interval_seconds?: number | null;
+            /** Sector Id */
+            sector_id?: string | null;
         };
         /** DashboardSummary */
         DashboardSummary: {
