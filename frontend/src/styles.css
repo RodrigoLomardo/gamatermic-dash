@@ -180,3 +180,10 @@ body { transition: background-color .3s ease, color .3s ease; background: var(--
 .nav-link.is-active { background:var(--accent); color:var(--on-accent); font-weight:700; transform:none; }
 .page-in { animation:page-in .45s cubic-bezier(.2,.8,.2,1) backwards; }
 @keyframes page-in { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+
+/* Fallback das classes de tokens novos: o dev server so le tailwind.config.js ao reiniciar; o CSS recarrega a quente. */
+.bg-sidebar { background-color: var(--sidebar); }
+.text-on-status { color: var(--on-status); }
+.bg-ok-soft { background-color: var(--ok-soft); } .text-ok-ink { color: var(--ok-ink); }
+.bg-warn-soft { background-color: var(--warn-soft); } .text-warn-ink { color: var(--warn-ink); }
+.bg-danger-soft { background-color: var(--danger-soft); } .text-danger-ink { color: var(--danger-ink); }
