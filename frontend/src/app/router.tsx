@@ -16,6 +16,7 @@ const DatasetDetailPage = L(import("@/features/datasets/DatasetPages"), "Dataset
 const NewDatasetPage = L(import("@/features/datasets/DatasetPages"), "NewDatasetPage");
 const UsersPage = L(import("@/features/admin/UsersPage"), "UsersPage");
 const RolesPage = L(import("@/features/admin/RolesPage"), "RolesPage");
+const SectorsPage = L(import("@/features/admin/SectorsPage"), "SectorsPage");
 const DevicesPage = L(import("@/features/admin/DevicesPage"), "DevicesPage");
 const AuditPage = L(import("@/features/admin/AuditPage"), "AuditPage");
 const SettingsPage = L(import("@/features/settings/SettingsPage"), "SettingsPage");
@@ -70,6 +71,7 @@ export const router = createBrowserRouter([
           { path: "admin/devices", element: guard(<DevicesPage />) },
           { path: "admin/users", element: guard(<UsersPage />, "user:manage") },
           { path: "admin/roles", element: guard(<RolesPage />, "role:manage") },
+          { path: "admin/setores", element: guard(<SectorsPage />, "grant:manage") },
           { path: "admin/audit", element: guard(<AuditPage />, "audit:view") },
           { path: "configuracoes", element: guard(<SettingsPage />, "settings:manage") },
           { path: "*", element: <div className="p-8 text-center text-ink-soft">Página não encontrada.</div> },

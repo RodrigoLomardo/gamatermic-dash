@@ -15,6 +15,7 @@ const GROUPS: { title: string; items: Item[] }[] = [
   { title: "Administração", items: [
     { to: "/admin/users", label: "Usuários", icon: <IconUsers />, perm: "user:manage" },
     { to: "/admin/roles", label: "Perfis e grupos", icon: <IconShield />, any: ["role:manage", "group:manage"] },
+    { to: "/admin/setores", label: "Setores e acessos", icon: <IconGrid />, perm: "grant:manage" },
     { to: "/admin/audit", label: "Auditoria", icon: <IconHistory />, perm: "audit:view" },
     { to: "/configuracoes", label: "Configurações", icon: <IconSliders />, perm: "settings:manage" },
   ] },

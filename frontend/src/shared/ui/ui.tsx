@@ -74,14 +74,18 @@ export function Empty({ children }: { children: ReactNode }) {
 
 export function Modal({ open, title, onClose, children, wide }: { open: boolean; title: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
+  // onClose costuma ser uma arrow inline (muda a cada render); guardar em ref evita
+  // reexecutar o efeito (e roubar o foco do input) a cada tecla digitada.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   useEffect(() => {
     if (!open) return;
     const prev = document.activeElement as HTMLElement | null;
     ref.current?.focus();
-    const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const key = (e: KeyboardEvent) => e.key === "Escape" && onCloseRef.current();
     window.addEventListener("keydown", key);
     return () => { window.removeEventListener("keydown", key); prev?.focus(); };
-  }, [open, onClose]);
+  }, [open]);
   if (!open) return null;
   // portal: ancestrais com transform (cards com hover) prendem o position:fixed ao proprio elemento
   return createPortal(
