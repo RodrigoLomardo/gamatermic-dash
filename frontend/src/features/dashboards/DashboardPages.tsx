@@ -1,10 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useAuth } from "@/app/auth";
-import { S, get, post } from "@/shared/api/http";
 import { fmtDateTime } from "@/shared/lib/format";
-import { Badge, Button, Card, Empty, ErrorBox, Select, Spinner, useToasts, cx } from "@/shared/ui/ui";
+import { Badge, Button, Empty, ErrorBox, Select, Spinner, cx } from "@/shared/ui/ui";
 import { WidgetCard } from "../widgets/WidgetCard";
 import type { Widget } from "../widgets/types";
 import { useMedia } from "@/shared/hooks/useMedia";
@@ -12,42 +10,7 @@ import { PRESETS, Filter, PeriodSel, useDashboard, useDashboardData } from "./us
 import { SharePanel } from "../admin/SharePanel";
 import { PublishControl } from "./PublishControl";
 
-export function DashboardsListPage() {
-  const { can } = useAuth(); const nav = useNavigate(); const toast = useToasts((s) => s.push);
-  const q = useQuery({ queryKey: ["dashboards"], queryFn: () => get<S["DashboardSummary"][]>("/dashboards") });
-  const dup = async (id: string) => { try { const d = await post<S["DashboardOut"]>(`/dashboards/${id}/duplicate`); toast("Dashboard duplicada."); nav(`/dashboards/${d.id}/editar`); } catch (e) { toast((e as Error).message, "danger"); } };
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold">Dashboards</h1>
-        {can("dashboard:create") && (
-          <div className="flex gap-2">
-            {can("dataset:query") && <Link to="/dashboards/nova/ia"><Button variant="secondary">Criar com IA</Button></Link>}
-            <Link to="/dashboards/nova"><Button>Nova dashboard</Button></Link>
-          </div>
-        )}
-      </div>
-      {q.isLoading && <Spinner />}
-      {q.error && <ErrorBox error={q.error} onRetry={() => q.refetch()} />}
-      {q.data?.length === 0 && <Empty>Nenhuma dashboard disponível para o seu perfil. Peça acesso a um administrador.</Empty>}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {q.data?.map((d) => (
-          <Card key={d.id} className="transition hover:shadow-lg">
-            <Link to={`/dashboards/${d.id}`} className="block">
-              <h2 className="text-lg font-semibold text-brand">{d.name}</h2>
-              <p className="mt-1 line-clamp-2 min-h-[2.5rem] text-sm text-ink-soft">{d.description}</p>
-            </Link>
-            <div className="mt-3 flex items-center justify-between text-xs text-ink-mute">
-              <span>{d.widget_count} widgets · atualizada {fmtDateTime(d.updated_at)}</span>
-              {can("dashboard:create") && <button className="font-semibold text-accent-dark hover:underline" onClick={() => dup(d.id)}>Duplicar</button>}
-            </div>
-            <div className="mt-3 border-t border-line pt-3"><PublishControl id={d.id} name={d.name} status={d.status} canEdit={can("dashboard:edit")} compact /></div>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
+export { DashboardsListPage } from "./DashboardsList";
 
 export function WidgetGrid({ widgets, results, tv = false, onDrill }: { widgets: Widget[]; results: Record<string, any>; tv?: boolean; onDrill?: (f: string, v: string) => void }) {
   const sorted = useMemo(() => [...widgets].sort((a, b) => a.y - b.y || a.x - b.x), [widgets]);

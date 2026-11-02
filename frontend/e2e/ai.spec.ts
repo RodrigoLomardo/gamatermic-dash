@@ -36,7 +36,7 @@ test("configura a IA, gera sugestões e cria o painel só com as aceitas", async
 test("lista de dashboards oferece criar com e sem IA", async ({ page }) => {
   await login(page);
   await expect(page.getByRole("heading", { name: "Dashboards" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Nova dashboard" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Novo dashboard" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Criar com IA" })).toBeVisible();
 });
 

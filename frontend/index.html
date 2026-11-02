@@ -7,6 +7,13 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <title>Gamatermic Dash</title>
+    <script>
+      try {
+        var m = localStorage.getItem("gama-color-mode");
+        if (m !== "light" && m !== "dark") m = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.dataset.mode = m;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

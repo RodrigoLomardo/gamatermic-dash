@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth, errMsg } from "@/app/auth";
 import { post } from "@/shared/api/http";
+import { ThemeToggle } from "@/app/ThemeToggle";
 import { Button, Card, Field, Input, Logo, Spinner, useToasts } from "@/shared/ui/ui";
 
 export function RequireAuth({ perm, children }: { perm?: string; children: JSX.Element }) {
@@ -27,9 +28,9 @@ export function LoginPage() {
     catch (x) { setErr(errMsg(x)); } finally { setBusy(false); }
   };
   return (
-    <div className="flex min-h-full items-center justify-center bg-brand p-4">
+    <div className="flex min-h-full items-center justify-center bg-sidebar p-4">
       <div className="w-full max-w-sm space-y-6">
-        <div className="flex justify-center"><Logo light /></div>
+        <div className="flex items-center justify-between"><Logo light /><ThemeToggle onDark /></div>
         <Card>
           <form onSubmit={submit} className="space-y-4" aria-label="Entrar">
             <h1 className="text-xl font-bold">Entrar</h1>

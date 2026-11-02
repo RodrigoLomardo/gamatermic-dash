@@ -18,21 +18,29 @@ export async function copyText(text: string): Promise<boolean> {
 export const StatusBadge = ({ status }: { status: string }) =>
   status === "published" ? <Badge tone="ok">No ar</Badge> : <Badge tone="warn">Fora do ar</Badge>;
 
-/** Lanca/retira o painel (so quem edita) e copia o link interno (exige login e permissao). */
-export function PublishControl({ id, name, status, canEdit, compact = false }: { id: string; name: string; status: string; canEdit: boolean; compact?: boolean }) {
+/** Acoes de lancar/retirar do ar e de copiar links; usadas pelo controle completo e pelo menu do card. */
+export function usePublishActions(id: string, name: string) {
   const qc = useQueryClient(); const toast = useToasts((s) => s.push);
-  const [confirm, setConfirm] = useState(false); const [busy, setBusy] = useState(false);
-  const online = status === "published";
-  const apply = async (next: boolean) => {
+  const [busy, setBusy] = useState(false);
+  const setOnline = async (next: boolean): Promise<boolean> => {
     setBusy(true);
     try {
       await put<S["DashboardOut"]>(`/dashboards/${id}/publication`, { online: next });
       toast(next ? `"${name}" está no ar.` : `"${name}" saiu do ar.`);
       qc.invalidateQueries({ queryKey: ["dashboards"] }); qc.invalidateQueries({ queryKey: ["dashboard", id] }); qc.invalidateQueries({ queryKey: ["playlists"] });
-      setConfirm(false);
-    } catch (e) { toast((e as Error).message, "danger"); } finally { setBusy(false); }
+      return true;
+    } catch (e) { toast((e as Error).message, "danger"); return false; } finally { setBusy(false); }
   };
   const copy = async (url: string, what: string) => toast((await copyText(url)) ? `${what} copiado.` : "Não foi possível copiar; copie manualmente.", "ok");
+  return { busy, setOnline, copy };
+}
+
+/** Lanca/retira o painel (so quem edita) e copia o link interno (exige login e permissao). */
+export function PublishControl({ id, name, status, canEdit, compact = false }: { id: string; name: string; status: string; canEdit: boolean; compact?: boolean }) {
+  const { busy, setOnline, copy } = usePublishActions(id, name);
+  const [confirm, setConfirm] = useState(false);
+  const online = status === "published";
+  const apply = async (next: boolean) => { if (await setOnline(next)) setConfirm(false); };
   return (
     <div className="flex flex-wrap items-center gap-2">
       <StatusBadge status={status} />

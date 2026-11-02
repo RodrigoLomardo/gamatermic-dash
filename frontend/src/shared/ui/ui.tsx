@@ -9,7 +9,7 @@ export function Button({ variant = "primary", size = "md", className, ...p }: Bu
     primary: "bg-accent text-accent-on hover:brightness-95 rounded-[8px_2px_8px_8px]",
     secondary: "rounded-lg bg-panel text-ink border border-line hover:bg-brand-soft",
     ghost: "rounded-lg text-ink-soft hover:bg-brand-soft",
-    danger: "rounded-lg bg-danger text-white hover:opacity-90",
+    danger: "rounded-lg bg-danger text-on-status hover:opacity-90",
   }[variant];
   const s = { sm: "px-2.5 py-1 text-sm", md: "px-4 py-2 text-sm", lg: "px-6 py-3 text-base" }[size];
   return <button {...p} className={cx("inline-flex items-center justify-center gap-2 font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed", v, s, className)} />;
@@ -48,8 +48,8 @@ export function Card({ title, actions, children, className, pad = true }: { titl
 
 export function Badge({ tone = "neutral", children }: { tone?: "neutral" | "ok" | "warn" | "danger" | "accent"; children: ReactNode }) {
   const t = {
-    neutral: "bg-brand-soft text-ink-soft", ok: "bg-[#dff5ec] text-[#13694a]", warn: "bg-[#fff1cc] text-[#8a5d00]",
-    danger: "bg-[#fde3e4] text-[#a02025]", accent: "bg-accent-soft text-accent-dark",
+    neutral: "bg-brand-soft text-ink-soft", ok: "bg-ok-soft text-ok-ink", warn: "bg-warn-soft text-warn-ink",
+    danger: "bg-danger-soft text-danger-ink", accent: "bg-accent-soft text-accent-dark",
   }[tone];
   return <span className={cx("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold", t)}>{children}</span>;
 }
@@ -61,7 +61,7 @@ export function Spinner({ label = "Carregando…" }: { label?: string }) {
 export function ErrorBox({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   const msg = error instanceof Error ? error.message : String(error ?? "Erro");
   return (
-    <div role="alert" className="rounded-lg border border-danger/30 bg-[#fde3e4] p-4 text-sm text-[#a02025]">
+    <div role="alert" className="rounded-lg border border-danger bg-danger-soft p-4 text-sm text-danger-ink">
       {msg} {onRetry && <button className="ml-2 font-semibold underline" onClick={onRetry}>Tentar de novo</button>}
     </div>
   );
@@ -83,7 +83,7 @@ export function Modal({ open, title, onClose, children, wide }: { open: boolean;
   }, [open, onClose]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-brand-dark/60 p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={title}
         className={cx("mt-10 w-full rounded-xl bg-panel shadow-2xl", wide ? "max-w-3xl" : "max-w-lg")}>
         <header className="flex items-center justify-between border-b border-line px-5 py-3">
@@ -123,7 +123,7 @@ export function Toasts() {
   return (
     <div aria-live="polite" className="fixed bottom-4 right-4 z-[60] space-y-2">
       {items.map((t) => (
-        <div key={t.id} className={cx("max-w-sm rounded-lg px-4 py-3 text-sm font-medium text-white shadow-lg", t.tone === "ok" ? "bg-ok" : "bg-danger")}>{t.text}</div>
+        <div key={t.id} className={cx("max-w-sm rounded-lg px-4 py-3 text-sm font-medium text-on-status shadow-lg", t.tone === "ok" ? "bg-ok" : "bg-danger")}>{t.text}</div>
       ))}
     </div>
   );
