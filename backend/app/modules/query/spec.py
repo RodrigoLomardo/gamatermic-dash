@@ -62,3 +62,4 @@ class QuerySpec(BaseModel):
     limit: int = Field(default=1000, ge=1, le=5000)
     period: Period | None = None
     compare_previous_period: bool = False
+    compare_to: Literal["previous", "last_year"] = "previous"  # com quem comparar: janela anterior ou o mesmo periodo do ano anterior

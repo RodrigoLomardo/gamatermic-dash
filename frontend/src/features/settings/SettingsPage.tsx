@@ -31,10 +31,10 @@ export function SettingsPage() {
 export function AiSettings() {
   const qc = useQueryClient(); const toast = useToasts((s) => s.push);
   const q = useQuery({ queryKey: ["settings-ai"], queryFn: () => get<Ai>("/settings/ai") });
-  const [form, setForm] = useState<{ enabled: boolean; model: string; key: string }>({ enabled: false, model: "", key: "" });
+  const [form, setForm] = useState<{ enabled: boolean; model: string; key: string; chat: boolean }>({ enabled: false, model: "", key: "", chat: true });
   const [busy, setBusy] = useState(false);
   const [test, setTest] = useState<TestOut | null>(null);
-  useEffect(() => { if (q.data) setForm({ enabled: q.data.enabled, model: q.data.model, key: "" }); }, [q.data]);
+  useEffect(() => { if (q.data) setForm({ enabled: q.data.enabled, model: q.data.model, key: "", chat: q.data.analysis_chat }); }, [q.data]);
 
   if (q.isLoading) return <Spinner />;
   if (q.error) return <ErrorBox error={q.error} onRetry={() => q.refetch()} />;
@@ -43,7 +43,7 @@ export function AiSettings() {
   const save = async (apiKey?: string, enabled = form.enabled) => {
     setBusy(true); setTest(null);
     try {
-      const out = await put<Ai>("/settings/ai", { enabled, model: form.model, api_key: apiKey });
+      const out = await put<Ai>("/settings/ai", { enabled, model: form.model, api_key: apiKey, analysis_chat: form.chat });
       qc.setQueryData(["settings-ai"], out); qc.invalidateQueries({ queryKey: ["ai-status"] });
       toast(apiKey === "" ? "Chave removida." : "Configurações salvas.");
     } catch (e) { toast(fail(e), "danger"); } finally { setBusy(false); }
@@ -70,6 +70,9 @@ export function AiSettings() {
         </Field>
         <label className="flex items-center gap-2 text-sm font-medium">
           <input type="checkbox" checked={form.enabled} onChange={(e) => setForm({ ...form, enabled: e.target.checked })} /> IA ativa para quem cria dashboards
+        </label>
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input type="checkbox" checked={form.chat} onChange={(e) => setForm({ ...form, chat: e.target.checked })} /> Chat “Perguntar à IA” na tela de análise (exige a IA ligada)
         </label>
         <div className="flex flex-wrap gap-2">
           <Button type="submit" disabled={busy}>Salvar</Button>

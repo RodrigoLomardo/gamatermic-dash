@@ -31,7 +31,7 @@ Backend: 126 testes (auth, RBAC, auditoria, ingestão, query engine, dispositivo
 
 ## Painel analítico (desktop)
 
-No painel, o botão **Análise** abre `/dashboards/:id/analise` ([ADR 0012](docs/adr/0012-painel-analitico.md)): período, filtros por campo (vários valores, exclusão, intervalo, texto), drill por clique em hierarquia (`viz_config.drill_path`) e por tempo (ano → trimestre → mês → dia), breadcrumb, tela cheia com troca de visual e "agrupar por", registros de origem paginados, busca, exportação CSV (`analysis:export`) e visões salvas. Tudo fica na URL (link reabre a mesma visão). Depois de atualizar: `make migrate` e `make bootstrap`.
+No painel, o botão **Análise** abre `/dashboards/:id/analise` ([ADR 0012](docs/adr/0012-painel-analitico.md)): período, filtros por campo (vários valores, exclusão, intervalo, texto), drill por clique em hierarquia (`viz_config.drill_path`) e por tempo (ano → trimestre → mês → dia), breadcrumb, tela cheia com troca de visual e "agrupar por", registros de origem paginados, busca, exportação CSV (`analysis:export`) e visões salvas. Tudo fica na URL (link reabre a mesma visão). **Perguntar à IA** (botão no topo, precisa da Groq ativa em Configurações): perguntas em português viram consultas validadas; o backend calcula e o gráfico aparece no chat, com "Aplicar à tela" e "Adicionar ao painel". Depois de atualizar: `make migrate` e `make bootstrap`.
 
 ## Assistente de IA (Groq)
 

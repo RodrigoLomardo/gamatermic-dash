@@ -1,6 +1,6 @@
 # ADR 0012 — Painel analítico (desktop): drill, filtros, registros, exportação e visões
 
-Status: aceito (Etapas 2–4 do plano; chat por IA **adiado**) · Data: 01/11/2026 · Plano: [`docs/planos/GAMA-FEAT-PAINEL-ANALITICO.md`](../planos/GAMA-FEAT-PAINEL-ANALITICO.md)
+Status: aceito (Etapas 1–5 do plano: análise interativa + POC + chat por IA) · Data: 01/11/2026 · Plano: [`docs/planos/GAMA-FEAT-PAINEL-ANALITICO.md`](../planos/GAMA-FEAT-PAINEL-ANALITICO.md)
 
 ## Contexto
 
@@ -19,14 +19,26 @@ A TV mostra; quem está no PC precisa explorar. O plano propôs uma rota própri
 9. **Visões salvas** (`analysis_views`, migração 0003): pessoais, estado validado pelo mesmo `Filter`/`Period` do `QuerySpec`, 50 por painel, `ON DELETE CASCADE` com o painel e o usuário.
 10. **Movimento com propósito:** indicador deslizante no período, chips que entram/saem, breadcrumb, FLIP do card para a tela cheia, folha lateral, contagem animada, barra de progresso só durante consulta. Tudo respeita `prefers-reduced-motion` (regra global já existente).
 
+## Chat por IA ("Perguntar à IA")
+
+11. **A IA escolhe a consulta; o backend calcula.** `POST /dashboards/{id}/analysis/chat` envia ao modelo só metadados (campos não-`pii` com nome/rótulo/tipo/papel, títulos e conteúdo dos gráficos do painel, período e filtros da tela, data de hoje) e as últimas 8 mensagens. A saída é JSON estrito com uma ação fechada: `show_chart` | `apply_view` | `explain_unsupported` | `clarify`. O backend traduz para `QuerySpec`, valida pela lista branca (`validate_widget`), faz **1 rodada de reparo** com o erro da validação e só então executa. O texto do modelo não carrega números (o prompt proíbe e a UI mostra o gráfico calculado).
+12. **Valores de filtro são conferidos no banco, nunca enviados ao modelo.** "parke" → "Parker" é resolvido por busca local nos valores distintos; o ajuste vira nota ao usuário (só quando houve adivinhação; diferença de caixa é silenciosa).
+13. **Comparação "mesmo período do ano anterior"** (`QuerySpec.compare_to = "last_year"`, `periods.previous_year`): período aberto compara só o trecho decorrido; períodos fechados deslocam 12 meses (ano bissexto correto).
+14. **Autorização:** exige `dashboard:view` + `dataset:view` no dataset (o chat não é atalho para dados de quem só vê painel). Ações do resultado: "Aplicar à tela" (filtros viram chips manuais editáveis) e "Adicionar ao painel" (só com `dashboard:edit`, pelo endpoint de widgets com `If-Match`).
+15. **Operação:** 12 perguntas/min por usuário; auditoria `ai.analysis_chat` (modelo, ação, tokens, hash do texto; **o texto não é gravado**); histórico do chat só em `sessionStorage` do navegador (D3). Liga/desliga próprio em Configurações (`analysis_chat`, RF-16) sem afetar a geração de dashboards.
+16. **Limites declarados ao usuário (não calcula):** razões entre medidas (margem %, média ponderada), churn/novos×recorrentes, vendidos em conjunto, projeção, causas, cruzar datasets. O modelo deve mostrar a parte calculável (`show_chart`) e dizer o que ficou de fora; recusa só quando não há parte útil.
+
+POC (Etapa 1) e resultados: [`docs/planos/POC-CHAT-ANALISE.md`](../planos/POC-CHAT-ANALISE.md). Reprodutível com `scripts/poc_chat_analise.py`.
+
 ## Adiado
 
-- **Chat por IA (Etapa 5)** e a POC de tradução pergunta → `QuerySpec` (Etapa 1): dependem de chave Groq real e de ~30 perguntas reais dos gestores (§14-D2). A arquitetura já comporta: o chat produziria `QuerySpec`/`overrides`/filtros que esta tela aplica. Antes, consultar a documentação oficial da Groq e registrar data/versão.
-- Comparação com período arbitrário (hoje só o "período anterior" por widget, via `compare_previous_period`).
+- Comparação com período arbitrário (hoje: período anterior ou mesmo período do ano anterior, só em KPI).
+- Insights narrativos com dados agregados (opção B do plano): exige decisão D1; o MVP não envia dados ao provedor.
 - Painéis já criados em bancos existentes não ganham `drill_path` sozinhos (o seed só cria painéis ausentes): edite o widget ou recrie; sem `drill_path` o drill usa `drill_field`, como antes.
 
 ## Consequências
 
-- Contrato OpenAPI: 8 rotas novas sob `/dashboards/{id}/analysis/*`, `DataRequest.overrides` e `ignored_filters` no resultado do widget (aditivos).
+- Contrato OpenAPI: rotas novas sob `/dashboards/{id}/analysis/*` (inclui `chat` e `chat/status`), `DataRequest.overrides/force_period`, `QuerySpec.compare_to`, `analysis_chat` em `/settings/ai` e `ignored_filters` no resultado do widget (aditivos).
+- A VPS precisa de saída HTTPS para a Groq (já exigida pelo ADR 0010). Em conta gratuita da Groq o limite de tokens/min é baixo (a POC encontrou 429 a cada poucas perguntas): para uso real, conta paga ou `gpt-oss-20b`.
 - Rodar `make migrate` (migração 0003) e `make bootstrap` (permissão `analysis:export` e papel Editor).
 - Medição de RNF-01 (p95 ≤ 2 s) **não foi feita** em dataset de referência; só validado manualmente com o relatório real (≈10 mil linhas), sem lentidão perceptível.

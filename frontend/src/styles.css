@@ -301,3 +301,35 @@ body { transition: background-color .3s ease, color .3s ease; background: var(--
 .an-dots i { width:5px; height:5px; border-radius:50%; background:var(--accent); animation:an-dot 1s ease-in-out infinite; }
 .an-dots i:nth-child(2) { animation-delay:.15s; } .an-dots i:nth-child(3) { animation-delay:.3s; }
 @keyframes an-dot { 0%,80%,100% { transform:scale(.5); opacity:.4; } 40% { transform:scale(1); opacity:1; } }
+
+/* ---------- Chat de analise ---------- */
+.an-ask { position:relative; display:inline-flex; align-items:center; gap:8px; padding:9px 16px; border-radius:12px; background:var(--ink); color:var(--surface); font-size:14px; font-weight:700; overflow:hidden; transition:transform .2s var(--spring), box-shadow .3s; }
+.an-ask::after { content:""; position:absolute; inset:0; background:linear-gradient(110deg, transparent 30%, color-mix(in srgb, var(--accent) 55%, transparent) 50%, transparent 70%); transform:translateX(-120%); transition:transform .7s var(--ease-out); }
+.an-ask:hover::after { transform:translateX(120%); }
+.an-ask:hover { transform:translateY(-1px); box-shadow:0 8px 24px color-mix(in srgb, var(--accent) 30%, transparent); }
+.an-ask[aria-pressed="true"] { background:var(--accent); color:var(--on-accent); }
+.an-ask svg { position:relative; z-index:1; }
+.an-root { transition:padding-right .45s var(--ease-out); }
+@media (min-width:1100px) { .an-root[data-chat] { padding-right:27rem; } }
+.an-chat { position:fixed; z-index:45; top:0; right:0; bottom:0; width:min(26rem, 100vw); display:flex; flex-direction:column; background:var(--panel); border-left:1px solid var(--line); box-shadow:var(--shadow-pop); animation:an-sheet-in .45s var(--ease-out); }
+.an-orb { display:inline-grid; place-items:center; width:26px; height:26px; border-radius:50%; background:conic-gradient(from 0deg, var(--accent), var(--brand-light), var(--accent)); color:var(--on-accent); animation:an-spin 6s linear infinite; }
+.an-orb svg { animation:an-spin 6s linear infinite reverse; }
+@keyframes an-spin { to { transform:rotate(360deg); } }
+.an-hello { animation:an-row-in .5s var(--ease-out) backwards; padding:14px; border:1px dashed var(--line); border-radius:14px; }
+.an-msg { max-width:100%; padding:10px 14px; border-radius:16px; font-size:14px; line-height:1.5; animation:an-msg-in .42s var(--spring) backwards; }
+.an-msg p { white-space:pre-wrap; }
+.an-msg.is-user { margin-left:2.5rem; border-bottom-right-radius:4px; background:var(--ink); color:var(--surface); transform-origin:bottom right; }
+.an-msg.is-bot { margin-right:.5rem; border-bottom-left-radius:4px; background:var(--brand-soft); color:var(--ink); transform-origin:bottom left; }
+.an-msg.is-error { background:var(--danger-soft); color:var(--danger-ink); }
+@keyframes an-msg-in { from { opacity:0; transform:translateY(12px) scale(.94); } to { opacity:1; transform:none; } }
+.an-interp { display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
+.an-interp li { padding:2px 9px; border-radius:999px; background:var(--panel); border:1px solid var(--line); font-size:11px; font-weight:600; color:var(--ink-soft); animation:an-chip-in .4s var(--spring) backwards; }
+.an-interp li:nth-child(2) { animation-delay:.05s; } .an-interp li:nth-child(3) { animation-delay:.1s; } .an-interp li:nth-child(4) { animation-delay:.15s; } .an-interp li:nth-child(5) { animation-delay:.2s; }
+.an-chat-chart { height:250px; margin-top:10px; animation:an-pop-in .5s var(--ease-out) .12s backwards; }
+.an-chat-chart > article { box-shadow:none; }
+.an-note { margin-top:6px; font-size:12px; color:var(--warn-ink); }
+.an-suggest { padding:5px 11px; border:1px solid var(--line); border-radius:999px; background:var(--panel); font-size:12px; font-weight:600; color:var(--ink-soft); text-align:left; transition:border-color .2s, background-color .2s, transform .2s; }
+.an-suggest:hover { border-color:var(--accent); background:var(--accent-soft); color:var(--accent-dark); transform:translateY(-1px); }
+.an-compose { display:flex; align-items:flex-end; gap:8px; padding:6px 6px 6px 12px; border:1px solid var(--line); border-radius:14px; background:var(--surface); transition:border-color .2s, box-shadow .2s; }
+.an-compose:focus-within { border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+.an-compose textarea { flex:1; min-height:34px; max-height:110px; padding:7px 0; resize:none; background:transparent; color:var(--ink); font-size:14px; outline:none; field-sizing:content; }

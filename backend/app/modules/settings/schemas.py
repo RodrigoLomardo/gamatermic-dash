@@ -15,6 +15,7 @@ class ApiKeyState(BaseModel):
 
 class AiSettingsOut(BaseModel):
     enabled: bool
+    analysis_chat: bool = True
     model: str
     api_key: ApiKeyState
     models: list[AiModelOption]
@@ -23,6 +24,7 @@ class AiSettingsOut(BaseModel):
 
 class AiSettingsIn(BaseModel):
     enabled: bool
+    analysis_chat: bool = True
     model: str
     # None = mantem a chave atual; "" = remove; texto = substitui. Nunca e devolvida.
     api_key: str | None = Field(default=None, max_length=300)

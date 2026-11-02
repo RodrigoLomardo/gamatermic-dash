@@ -1,12 +1,13 @@
 import { useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { IconChevronRight, IconExpand, IconRows, IconUndo } from "@/app/icons";
+import { IconChevronRight, IconExpand, IconRows, IconSparkles, IconUndo } from "@/app/icons";
 import { fmtDateTime } from "@/shared/lib/format";
 import { Badge, Button, Empty, ErrorBox, Spinner, cx } from "@/shared/ui/ui";
 import { useMedia } from "@/shared/hooks/useMedia";
 import { PeriodSel, useDashboard, useDashboardData } from "../dashboards/useDashboardData";
 import { WidgetCard } from "../widgets/WidgetCard";
 import type { Widget, WidgetResult } from "../widgets/types";
+import { ChatPanel, applyToView, useChatStatus } from "./ChatPanel";
 import { ExpandedWidget } from "./ExpandedWidget";
 import { FilterBar } from "./FilterBar";
 import { PeriodControl } from "./PeriodControl";
@@ -55,6 +56,8 @@ export function AnalysisPage() {
   const [presetField, setPresetField] = useState<string | undefined>();
   const [expandFrom, setExpandFrom] = useState<DOMRect | null>(null);
   const [recordsFor, setRecordsFor] = useState<string | null>(null);
+  const chatStatus = useChatStatus(id);
+  const [chatOpen, setChatOpen] = useState(false);
   const desktop = useMedia("(min-width: 768px)");
 
   const widgets = useMemo(() => dash.data?.widgets ?? [], [dash.data]);
@@ -89,7 +92,7 @@ export function AnalysisPage() {
   const filterable = [...fields.values()];
 
   return (
-    <div className="an-root space-y-5">
+    <div className="an-root space-y-5" data-chat={(chatOpen && chatStatus.data?.available) || undefined}>
       <div className="an-progress" data-active={data.isFetching || undefined} aria-hidden="true" />
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
@@ -99,6 +102,7 @@ export function AnalysisPage() {
         <div className="flex flex-wrap items-center gap-2">
           <SearchBox id={d.id} onValue={(h) => set((v) => ({ ...v, filters: [...v.filters, { field: h.field, op: "in" as const, value: [h.value], src: "manual" as const }].slice(0, 20) }))}
             onField={(h) => { setPresetField(h.field); setAdding(true); }} />
+          {chatStatus.data?.available && <button type="button" className="an-ask" aria-pressed={chatOpen} onClick={() => setChatOpen((o) => !o)}><IconSparkles width={16} height={16} />Perguntar à IA</button>}
           <ViewsMenu id={d.id} current={view} onApply={(v) => set(v)} />
         </div>
       </header>
@@ -150,6 +154,7 @@ export function AnalysisPage() {
         </div>
       )}
 
+      {chatOpen && chatStatus.data?.available && <ChatPanel dashId={d.id} view={view} onClose={() => setChatOpen(false)} onApply={(a) => set((v) => applyToView(v, a))} />}
       {focusW && id && (
         <ExpandedWidget id={id} widget={focusW} initial={plan.overrides[focusW.id]} from={expandFrom} period={period} filters={apiFilters} fields={filterable}
           onClose={() => set((v) => ({ ...v, focus: null }), false)}

@@ -21,6 +21,11 @@
    },
    "AiSettingsIn": {
     "properties": {
+     "analysis_chat": {
+      "default": true,
+      "title": "Analysis Chat",
+      "type": "boolean"
+     },
      "api_key": {
       "anyOf": [
        {
@@ -51,6 +56,11 @@
    },
    "AiSettingsOut": {
     "properties": {
+     "analysis_chat": {
+      "default": true,
+      "title": "Analysis Chat",
+      "type": "boolean"
+     },
      "api_key": {
       "$ref": "#/components/schemas/ApiKeyState"
      },
@@ -158,6 +168,341 @@
      "model"
     ],
     "title": "AiTestOut",
+    "type": "object"
+   },
+   "AnalysisChatApply": {
+    "description": "O que 'aplicar a tela' faz: periodo e filtros da resposta.",
+    "properties": {
+     "filters": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/AnalysisChatFilter"
+      },
+      "title": "Filters",
+      "type": "array"
+     },
+     "period": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Period"
+     }
+    },
+    "title": "AnalysisChatApply",
+    "type": "object"
+   },
+   "AnalysisChatFilter": {
+    "properties": {
+     "field": {
+      "title": "Field",
+      "type": "string"
+     },
+     "op": {
+      "title": "Op",
+      "type": "string"
+     },
+     "value": {
+      "title": "Value"
+     }
+    },
+    "required": [
+     "field",
+     "op"
+    ],
+    "title": "AnalysisChatFilter",
+    "type": "object"
+   },
+   "AnalysisChatIn": {
+    "properties": {
+     "history": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/AnalysisChatTurn"
+      },
+      "maxItems": 8,
+      "title": "History",
+      "type": "array"
+     },
+     "message": {
+      "maxLength": 600,
+      "minLength": 2,
+      "title": "Message",
+      "type": "string"
+     },
+     "view": {
+      "$ref": "#/components/schemas/AnalysisChatView",
+      "default": {
+       "filters": []
+      }
+     }
+    },
+    "required": [
+     "message"
+    ],
+    "title": "AnalysisChatIn",
+    "type": "object"
+   },
+   "AnalysisChatOut": {
+    "properties": {
+     "action": {
+      "enum": [
+       "show_chart",
+       "apply_view",
+       "explain_unsupported",
+       "clarify"
+      ],
+      "title": "Action",
+      "type": "string"
+     },
+     "apply": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/AnalysisChatApply"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "interpretation": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Interpretation",
+      "type": "array"
+     },
+     "message": {
+      "title": "Message",
+      "type": "string"
+     },
+     "notes": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Notes",
+      "type": "array"
+     },
+     "repaired": {
+      "default": false,
+      "title": "Repaired",
+      "type": "boolean"
+     },
+     "result": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Result"
+     },
+     "suggestions": {
+      "default": [],
+      "items": {
+       "type": "string"
+      },
+      "title": "Suggestions",
+      "type": "array"
+     },
+     "summary": {
+      "default": "",
+      "title": "Summary",
+      "type": "string"
+     },
+     "usage": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/AnalysisChatUsage"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "valid": {
+      "default": true,
+      "title": "Valid",
+      "type": "boolean"
+     },
+     "widget": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/AnalysisChatWidget"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "required": [
+     "action",
+     "message"
+    ],
+    "title": "AnalysisChatOut",
+    "type": "object"
+   },
+   "AnalysisChatStatus": {
+    "properties": {
+     "available": {
+      "title": "Available",
+      "type": "boolean"
+     },
+     "model": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Model"
+     }
+    },
+    "required": [
+     "available"
+    ],
+    "title": "AnalysisChatStatus",
+    "type": "object"
+   },
+   "AnalysisChatTurn": {
+    "properties": {
+     "role": {
+      "enum": [
+       "user",
+       "assistant"
+      ],
+      "title": "Role",
+      "type": "string"
+     },
+     "text": {
+      "maxLength": 1500,
+      "title": "Text",
+      "type": "string"
+     }
+    },
+    "required": [
+     "role",
+     "text"
+    ],
+    "title": "AnalysisChatTurn",
+    "type": "object"
+   },
+   "AnalysisChatUsage": {
+    "properties": {
+     "completion_tokens": {
+      "default": 0,
+      "title": "Completion Tokens",
+      "type": "integer"
+     },
+     "model": {
+      "title": "Model",
+      "type": "string"
+     },
+     "prompt_tokens": {
+      "default": 0,
+      "title": "Prompt Tokens",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "model"
+    ],
+    "title": "AnalysisChatUsage",
+    "type": "object"
+   },
+   "AnalysisChatView": {
+    "description": "Estado da tela no momento da pergunta (so contexto para o modelo).",
+    "properties": {
+     "filters": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/Filter"
+      },
+      "maxItems": 20,
+      "title": "Filters",
+      "type": "array"
+     },
+     "period": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Period"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "title": "AnalysisChatView",
+    "type": "object"
+   },
+   "AnalysisChatWidget": {
+    "properties": {
+     "dataset_id": {
+      "format": "uuid",
+      "title": "Dataset Id",
+      "type": "string"
+     },
+     "follows_global_period": {
+      "title": "Follows Global Period",
+      "type": "boolean"
+     },
+     "h": {
+      "title": "H",
+      "type": "integer"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "query_config": {
+      "additionalProperties": true,
+      "title": "Query Config",
+      "type": "object"
+     },
+     "title": {
+      "title": "Title",
+      "type": "string"
+     },
+     "type": {
+      "title": "Type",
+      "type": "string"
+     },
+     "viz_config": {
+      "additionalProperties": true,
+      "title": "Viz Config",
+      "type": "object"
+     },
+     "w": {
+      "title": "W",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "type",
+     "title",
+     "dataset_id",
+     "query_config",
+     "viz_config",
+     "follows_global_period",
+     "w",
+     "h"
+    ],
+    "title": "AnalysisChatWidget",
     "type": "object"
    },
    "AnalysisColumnOut": {
@@ -4839,6 +5184,102 @@
     "summary": "Patch",
     "tags": [
      "dashboards"
+    ]
+   }
+  },
+  "/api/v1/dashboards/{did}/analysis/chat": {
+   "post": {
+    "operationId": "chat_ask_api_v1_dashboards__did__analysis_chat_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "did",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Did",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AnalysisChatIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnalysisChatOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Chat Ask",
+    "tags": [
+     "analysis"
+    ]
+   }
+  },
+  "/api/v1/dashboards/{did}/analysis/chat/status": {
+   "get": {
+    "operationId": "chat_status_api_v1_dashboards__did__analysis_chat_status_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "did",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Did",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnalysisChatStatus"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Chat Status",
+    "tags": [
+     "analysis"
     ]
    }
   },

@@ -89,3 +89,18 @@ def previous(period: Period | None, now: datetime | None = None) -> tuple[dateti
         return _start(_add_months(a_l.date(), -months)).astimezone(UTC), a
     length = b - a
     return a - length, a
+
+
+def previous_year(period: Period | None, now: datetime | None = None) -> tuple[datetime, datetime] | None:
+    """Mesmo recorte um ano antes (YoY). Periodo em curso (este mes/ano) segue o decorrido ate hoje: 'mesmo periodo de 2025'."""
+    rng = resolve(period, now)
+    if rng is None:
+        return None
+    a, b = (x.astimezone(SP) for x in rng)
+    now = (now or now_sp()).astimezone(SP)
+    pa = _add_months(a.date(), -12)
+    if a <= now < b:  # periodo aberto: so o trecho decorrido (inclui o dia de hoje por inteiro)
+        pb = _add_months(now.date(), -12) + timedelta(days=1)
+    else:
+        pb = _add_months(b.date(), -12)
+    return _start(pa).astimezone(UTC), _start(pb).astimezone(UTC)

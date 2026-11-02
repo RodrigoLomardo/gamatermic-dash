@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SettingsPage } from "./SettingsPage";
 
-const BASE = { enabled: false, model: "openai/gpt-oss-120b", updated_at: null,
+const BASE = { enabled: false, analysis_chat: true, model: "openai/gpt-oss-120b", updated_at: null,
   models: [{ id: "openai/gpt-oss-120b", label: "GPT-OSS 120B" }, { id: "openai/gpt-oss-20b", label: "GPT-OSS 20B" }] };
 
 describe("Configurações → IA", () => {
@@ -32,7 +32,7 @@ describe("Configurações → IA", () => {
     await userEvent.click(screen.getByLabelText(/IA ativa/));
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }));
     await waitFor(() => expect(sent).toHaveLength(1));
-    expect(sent[0]).toEqual({ enabled: true, model: "openai/gpt-oss-20b", api_key: "gsk_abcdefghijklmnopqrstWXYZ" });
+    expect(sent[0]).toEqual({ enabled: true, model: "openai/gpt-oss-20b", api_key: "gsk_abcdefghijklmnopqrstWXYZ", analysis_chat: true });
     expect(await screen.findByText(/termina em WXYZ/)).toBeInTheDocument();
     expect(screen.getByLabelText("Chave de API")).toHaveValue(""); // campo limpo apos salvar
 

@@ -118,3 +118,71 @@ class AnalysisViewOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# ---------------- chat de analise ----------------
+class AnalysisChatStatus(BaseModel):
+    available: bool
+    model: str | None = None
+
+
+class AnalysisChatView(BaseModel):
+    """Estado da tela no momento da pergunta (so contexto para o modelo)."""
+    period: Period | None = None
+    filters: list[Filter] = Field(default=[], max_length=20)
+
+
+class AnalysisChatTurn(BaseModel):
+    role: Literal["user", "assistant"]
+    text: str = Field(max_length=1500)
+
+
+class AnalysisChatIn(BaseModel):
+    message: str = Field(min_length=2, max_length=600)
+    history: list[AnalysisChatTurn] = Field(default=[], max_length=8)
+    view: AnalysisChatView = AnalysisChatView()
+
+
+class AnalysisChatFilter(BaseModel):
+    field: str
+    op: str
+    value: Any = None
+
+
+class AnalysisChatApply(BaseModel):
+    """O que 'aplicar a tela' faz: periodo e filtros da resposta."""
+    period: dict[str, Any] | None = None
+    filters: list[AnalysisChatFilter] = []
+
+
+class AnalysisChatWidget(BaseModel):
+    id: str
+    type: str
+    title: str
+    dataset_id: uuid.UUID
+    query_config: dict[str, Any]
+    viz_config: dict[str, Any]
+    follows_global_period: bool
+    w: int
+    h: int
+
+
+class AnalysisChatUsage(BaseModel):
+    model: str
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+
+
+class AnalysisChatOut(BaseModel):
+    action: Literal["show_chart", "apply_view", "explain_unsupported", "clarify"]
+    message: str
+    interpretation: list[str] = []
+    notes: list[str] = []
+    suggestions: list[str] = []
+    summary: str = ""  # vai no historico do proximo turno ("mostrado: ...")
+    widget: AnalysisChatWidget | None = None
+    result: dict[str, Any] | None = None
+    apply: AnalysisChatApply | None = None
+    usage: AnalysisChatUsage | None = None
+    valid: bool = True  # False = nem apos o reparo houve consulta valida (resposta generica)
+    repaired: bool = False

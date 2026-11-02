@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.authz.policy import Principal
 from app.core.deps import get_session, require_permission
 from app.core.rate_limit import hit
+from app.modules.analysis import chat, service
 from app.modules.analysis import schemas as sc
-from app.modules.analysis import service
 
 router = APIRouter(prefix="/dashboards/{did}/analysis", tags=["analysis"])
 view = require_permission("dashboard:view")
@@ -61,3 +61,15 @@ async def create_view(did: uuid.UUID, body: sc.AnalysisViewIn, request: Request,
 async def delete_view(did: uuid.UUID, vid: uuid.UUID, request: Request, p: Principal = Depends(view), s: AsyncSession = Depends(get_session)):
     await service.delete_view(s, request, p, did, vid)
     return Response(status_code=204)
+
+
+@router.get("/chat/status", response_model=sc.AnalysisChatStatus)
+async def chat_status(did: uuid.UUID, p: Principal = Depends(view), s: AsyncSession = Depends(get_session)):
+    await service._dashboard(s, p, did)
+    return await chat.status(s)
+
+
+@router.post("/chat", response_model=sc.AnalysisChatOut)
+async def chat_ask(did: uuid.UUID, body: sc.AnalysisChatIn, request: Request, p: Principal = Depends(view), s: AsyncSession = Depends(get_session)):
+    hit(f"analysis-chat:{p.id}", 12, 60)
+    return await chat.ask(s, request, p, did, body)

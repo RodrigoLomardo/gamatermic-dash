@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
-from app.modules.query.periods import previous, resolve
+from app.modules.query.periods import previous, previous_year, resolve
 from app.modules.query.spec import Period
 
 SP = ZoneInfo("America/Sao_Paulo")
@@ -59,3 +59,16 @@ def test_previous_rolling():
     now = datetime(2026, 10, 30, 12, 0, tzinfo=SP)
     a, b = previous(p("last_7_days"), now)
     assert (b - a).days == 7 and local((a, b))[1] == "2026-10-24T00:00:00"
+
+
+def test_previous_year_same_elapsed_slice_for_open_period():
+    now = datetime(2026, 11, 1, 12, 0, tzinfo=SP)
+    a, b = previous_year(p("this_year"), now)
+    assert local((a, b))[0] == "2025-01-01T00:00:00"
+    assert local((a, b))[1] == "2025-11-02T00:00:00"  # so o trecho decorrido de 2026 (ate 01/11 inclusive)
+
+
+def test_previous_year_full_for_closed_period():
+    now = datetime(2026, 11, 1, 12, 0, tzinfo=SP)
+    a, b = previous_year(Period(mode="absolute", **{"from": "2025-01-01", "to": "2025-12-31"}), now)
+    assert local((a, b)) == ("2024-01-01T00:00:00", "2025-01-01T00:00:00")

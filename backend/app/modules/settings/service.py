@@ -56,13 +56,19 @@ async def ai_runtime(session: AsyncSession) -> AiRuntime:
     return AiRuntime(enabled=bool(v.get("enabled")), model=model, api_key=_decrypt(sec.secret_ciphertext if sec else None))
 
 
+async def chat_enabled(session: AsyncSession) -> bool:
+    """Liga/desliga so o chat de analise (RF-16); o resto da IA segue o flag geral. Padrao: ligado."""
+    row = await repo.get(session, AI_KEY)
+    return bool((row.value if row else {}).get("analysis_chat", True))
+
+
 async def get_ai(session: AsyncSession) -> sc.AiSettingsOut:
     row = await repo.get(session, AI_KEY)
     sec = await repo.get(session, AI_SECRET_KEY)
     rt = await ai_runtime(session)
     stamps = [r.updated_at for r in (row, sec) if r is not None]
     return sc.AiSettingsOut(
-        enabled=rt.enabled, model=rt.model,
+        enabled=rt.enabled, model=rt.model, analysis_chat=await chat_enabled(session),
         api_key=sc.ApiKeyState(configured=bool(rt.api_key), last4=rt.api_key[-4:] if rt.api_key else None),
         models=[sc.AiModelOption(id=k, label=v) for k, v in AI_MODELS.items()],
         updated_at=max(stamps) if stamps else None,
@@ -72,7 +78,7 @@ async def get_ai(session: AsyncSession) -> sc.AiSettingsOut:
 async def update_ai(session: AsyncSession, request: Request, p: Principal, body: sc.AiSettingsIn) -> sc.AiSettingsOut:
     if body.model not in AI_MODELS:
         raise Unprocessable("Modelo não permitido.", code="invalid_model")
-    meta: dict = {"enabled": body.enabled, "model": body.model}
+    meta: dict = {"enabled": body.enabled, "model": body.model, "analysis_chat": body.analysis_chat}
     if body.api_key is not None:
         key = body.api_key.strip()
         if key and (len(key) < 20 or any(ch.isspace() for ch in key)):
@@ -83,7 +89,7 @@ async def update_ai(session: AsyncSession, request: Request, p: Principal, body:
     has_key = bool(body.api_key.strip()) if body.api_key is not None else bool(current and current.api_key)
     if body.enabled and not has_key:
         raise Unprocessable("Informe a chave de API da Groq antes de ativar a IA.", code="api_key_required")
-    await repo.upsert(session, AI_KEY, {"enabled": body.enabled, "model": body.model}, p.id)
+    await repo.upsert(session, AI_KEY, {"enabled": body.enabled, "model": body.model, "analysis_chat": body.analysis_chat}, p.id)
     await audit.record(session, "settings.ai.update", request=request, principal=p, resource_type="settings", resource_id=AI_KEY, metadata=meta)
     await session.commit()
     return await get_ai(session)

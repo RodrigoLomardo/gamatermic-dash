@@ -35,7 +35,7 @@ export function Kpi({ widget, result, tv }: RenderProps) {
               {d >= 0 ? "▲" : "▼"} {Math.abs(d * 100).toFixed(1).replace(".", ",")}%
             </span>
           ) : <span className="text-ink-mute">sem base</span>}
-          <span className="text-ink-mute">vs período anterior ({fmt(prev, v.format ?? "number", true)})</span>
+          <span className="text-ink-mute">{(widget.query_config as { compare_to?: string }).compare_to === "last_year" ? "vs mesmo período do ano anterior" : "vs período anterior"} ({fmt(prev, v.format ?? "number", true)})</span>
         </div>
       )}
     </div>

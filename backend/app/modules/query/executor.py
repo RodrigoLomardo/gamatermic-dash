@@ -17,7 +17,7 @@ from app.core.errors import Unprocessable
 from app.core.logging import get_logger
 from app.modules.datasets.models import Dataset, DatasetField
 from app.modules.query.compiler import FieldMeta, compile_query
-from app.modules.query.periods import previous, resolve
+from app.modules.query.periods import previous, previous_year, resolve
 from app.modules.query.spec import QuerySpec
 
 log = get_logger("query")
@@ -86,7 +86,7 @@ async def execute(session: AsyncSession, ds_id: uuid.UUID, spec: QuerySpec, *, m
     if spec.period is not None and not time_field:
         raise Unprocessable("Dataset sem campo de tempo; remova o período.", code="invalid_query")
     rng = resolve(spec.period)
-    prev_rng = previous(spec.period) if spec.compare_previous_period else None
+    prev_rng = (previous_year(spec.period) if spec.compare_to == "last_year" else previous(spec.period)) if spec.compare_previous_period else None
     compile_query(spec, ds_id, fields, time_field, rng, mask_pii=mask_pii)  # valida (422) antes do cache
     key_src = json.dumps({"spec": spec.model_dump(mode="json", by_alias=True), "rng": [str(x) for x in (rng or [])],
                           "prev": [str(x) for x in (prev_rng or [])], "pii": mask_pii}, sort_keys=True)

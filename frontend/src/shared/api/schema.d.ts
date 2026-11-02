@@ -211,6 +211,40 @@ export interface paths {
         patch: operations["patch_api_v1_dashboards__did__patch"];
         trace?: never;
     };
+    "/api/v1/dashboards/{did}/analysis/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Chat Ask */
+        post: operations["chat_ask_api_v1_dashboards__did__analysis_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dashboards/{did}/analysis/chat/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chat Status */
+        get: operations["chat_status_api_v1_dashboards__did__analysis_chat_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/dashboards/{did}/analysis/export": {
         parameters: {
             query?: never;
@@ -1415,6 +1449,11 @@ export interface components {
         };
         /** AiSettingsIn */
         AiSettingsIn: {
+            /**
+             * Analysis Chat
+             * @default true
+             */
+            analysis_chat: boolean;
             /** Api Key */
             api_key?: string | null;
             /** Enabled */
@@ -1424,6 +1463,11 @@ export interface components {
         };
         /** AiSettingsOut */
         AiSettingsOut: {
+            /**
+             * Analysis Chat
+             * @default true
+             */
+            analysis_chat: boolean;
             api_key: components["schemas"]["ApiKeyState"];
             /** Enabled */
             enabled: boolean;
@@ -1456,6 +1500,165 @@ export interface components {
             model_available: boolean;
             /** Ok */
             ok: boolean;
+        };
+        /**
+         * AnalysisChatApply
+         * @description O que 'aplicar a tela' faz: periodo e filtros da resposta.
+         */
+        AnalysisChatApply: {
+            /**
+             * Filters
+             * @default []
+             */
+            filters: components["schemas"]["AnalysisChatFilter"][];
+            /** Period */
+            period?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** AnalysisChatFilter */
+        AnalysisChatFilter: {
+            /** Field */
+            field: string;
+            /** Op */
+            op: string;
+            /** Value */
+            value?: unknown;
+        };
+        /** AnalysisChatIn */
+        AnalysisChatIn: {
+            /**
+             * History
+             * @default []
+             */
+            history: components["schemas"]["AnalysisChatTurn"][];
+            /** Message */
+            message: string;
+            /**
+             * @default {
+             *       "filters": []
+             *     }
+             */
+            view: components["schemas"]["AnalysisChatView"];
+        };
+        /** AnalysisChatOut */
+        AnalysisChatOut: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "show_chart" | "apply_view" | "explain_unsupported" | "clarify";
+            apply?: components["schemas"]["AnalysisChatApply"] | null;
+            /**
+             * Interpretation
+             * @default []
+             */
+            interpretation: string[];
+            /** Message */
+            message: string;
+            /**
+             * Notes
+             * @default []
+             */
+            notes: string[];
+            /**
+             * Repaired
+             * @default false
+             */
+            repaired: boolean;
+            /** Result */
+            result?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Suggestions
+             * @default []
+             */
+            suggestions: string[];
+            /**
+             * Summary
+             * @default
+             */
+            summary: string;
+            usage?: components["schemas"]["AnalysisChatUsage"] | null;
+            /**
+             * Valid
+             * @default true
+             */
+            valid: boolean;
+            widget?: components["schemas"]["AnalysisChatWidget"] | null;
+        };
+        /** AnalysisChatStatus */
+        AnalysisChatStatus: {
+            /** Available */
+            available: boolean;
+            /** Model */
+            model?: string | null;
+        };
+        /** AnalysisChatTurn */
+        AnalysisChatTurn: {
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /** Text */
+            text: string;
+        };
+        /** AnalysisChatUsage */
+        AnalysisChatUsage: {
+            /**
+             * Completion Tokens
+             * @default 0
+             */
+            completion_tokens: number;
+            /** Model */
+            model: string;
+            /**
+             * Prompt Tokens
+             * @default 0
+             */
+            prompt_tokens: number;
+        };
+        /**
+         * AnalysisChatView
+         * @description Estado da tela no momento da pergunta (so contexto para o modelo).
+         */
+        AnalysisChatView: {
+            /**
+             * Filters
+             * @default []
+             */
+            filters: components["schemas"]["Filter"][];
+            period?: components["schemas"]["Period"] | null;
+        };
+        /** AnalysisChatWidget */
+        AnalysisChatWidget: {
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+            /** Follows Global Period */
+            follows_global_period: boolean;
+            /** H */
+            h: number;
+            /** Id */
+            id: string;
+            /** Query Config */
+            query_config: {
+                [key: string]: unknown;
+            };
+            /** Title */
+            title: string;
+            /** Type */
+            type: string;
+            /** Viz Config */
+            viz_config: {
+                [key: string]: unknown;
+            };
+            /** W */
+            w: number;
         };
         /** AnalysisColumnOut */
         AnalysisColumnOut: {
@@ -3404,6 +3607,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DashboardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chat_ask_api_v1_dashboards__did__analysis_chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                did: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalysisChatIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisChatOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chat_status_api_v1_dashboards__did__analysis_chat_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                did: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisChatStatus"];
                 };
             };
             /** @description Validation Error */
