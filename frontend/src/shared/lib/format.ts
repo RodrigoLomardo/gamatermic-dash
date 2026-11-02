@@ -39,6 +39,15 @@ export function fmtMonth(iso: string): string {
   return d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }).replace(".", "");
 }
 
+/** Rotulo de um ponto da serie temporal conforme a granularidade (mes e o padrao). */
+export function fmtPeriod(iso: string, gran: string | undefined): string {
+  const day = iso.slice(0, 10);
+  if (gran === "year") return day.slice(0, 4);
+  if (gran === "quarter") return `T${Math.floor((Number(day.slice(5, 7)) - 1) / 3) + 1}/${day.slice(2, 4)}`;
+  if (gran === "day" || gran === "week") return fmtDate(day).slice(0, 5);
+  return fmtMonth(day);
+}
+
 export function fmtDateTime(iso?: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleString("pt-BR", { timeZone: TZ, dateStyle: "short", timeStyle: "short" });

@@ -4,7 +4,7 @@ import { cx } from "@/shared/ui/ui";
 import { BarCompact, GaugeCompact, LineCompact, PieCompact, TableCompact } from "./compact";
 import { BarW, Gauge, Kpi, LineW, PieW, TableW } from "./renderers";
 import { COMPACT_LABEL, isCompact } from "./sizes";
-import type { DrillHandler, RenderProps, Widget, WidgetResult } from "./types";
+import type { DrillHandler, RenderProps, TimeDrillHandler, Widget, WidgetResult } from "./types";
 
 // registry: tipo -> renderer (novos widgets entram aqui sem tocar nas paginas)
 export const REGISTRY: Record<string, (p: RenderProps) => ReactNode> = {
@@ -15,8 +15,8 @@ export const COMPACT_REGISTRY: Record<string, (p: RenderProps) => ReactNode> = {
   gauge: GaugeCompact, line: LineCompact, bar: BarCompact, pie: PieCompact, table: TableCompact,
 };
 
-export function WidgetCard({ widget, result, tv = false, onDrill, dim, size, showViewHint }: {
-  widget: Widget; result?: WidgetResult; tv?: boolean; onDrill?: DrillHandler; dim?: boolean;
+export function WidgetCard({ widget, result, tv = false, onDrill, onTimeDrill, dim, size, showViewHint }: {
+  widget: Widget; result?: WidgetResult; tv?: boolean; onDrill?: DrillHandler; onTimeDrill?: TimeDrillHandler; dim?: boolean;
   /** tamanho atual na grade (no editor muda ao vivo enquanto o usuario arrasta); padrao: o salvo */
   size?: { w: number; h: number }; showViewHint?: boolean;
 }) {
@@ -30,7 +30,7 @@ export function WidgetCard({ widget, result, tv = false, onDrill, dim, size, sho
       <div role="alert" className="flex h-full flex-col items-center justify-center gap-1 text-center text-sm text-danger">
         <span className="font-semibold">Não foi possível carregar</span><span className="text-xs text-ink-mute">{result.error.message}</span>
       </div>
-    ) : R ? <R key={mode} widget={widget} result={result} tv={tv} onDrill={onDrill} /> : <div>Tipo não suportado: {widget.type}</div>;
+    ) : R ? <R key={mode} widget={widget} result={result} tv={tv} onDrill={onDrill} onTimeDrill={onTimeDrill} /> : <div>Tipo não suportado: {widget.type}</div>;
   return (
     <article className={cx("relative flex h-full min-h-0 flex-col rounded-xl border border-line bg-panel shadow-card", tv ? "p-[clamp(.6rem,1vw,1.2rem)]" : "p-3", dim && "opacity-60")}
       data-view={compact ? "compact" : "full"}>

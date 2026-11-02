@@ -211,6 +211,143 @@ export interface paths {
         patch: operations["patch_api_v1_dashboards__did__patch"];
         trace?: never;
     };
+    "/api/v1/dashboards/{did}/analysis/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Export */
+        post: operations["export_api_v1_dashboards__did__analysis_export_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dashboards/{did}/analysis/fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fields */
+        get: operations["fields_api_v1_dashboards__did__analysis_fields_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dashboards/{did}/analysis/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Query */
+        post: operations["query_api_v1_dashboards__did__analysis_query_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dashboards/{did}/analysis/records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Records */
+        post: operations["records_api_v1_dashboards__did__analysis_records_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dashboards/{did}/analysis/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search */
+        get: operations["search_api_v1_dashboards__did__analysis_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dashboards/{did}/analysis/values": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Values */
+        get: operations["values_api_v1_dashboards__did__analysis_values_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dashboards/{did}/analysis/views": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Views */
+        get: operations["list_views_api_v1_dashboards__did__analysis_views_get"];
+        put?: never;
+        /** Create View */
+        post: operations["create_view_api_v1_dashboards__did__analysis_views_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dashboards/{did}/analysis/views/{vid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete View */
+        delete: operations["delete_view_api_v1_dashboards__did__analysis_views__vid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/dashboards/{did}/data": {
         parameters: {
             query?: never;
@@ -1320,6 +1457,230 @@ export interface components {
             /** Ok */
             ok: boolean;
         };
+        /** AnalysisColumnOut */
+        AnalysisColumnOut: {
+            /** Data Type */
+            data_type: string;
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
+            /** Sensitivity */
+            sensitivity: string;
+        };
+        /** AnalysisDatasetFieldsOut */
+        AnalysisDatasetFieldsOut: {
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+            /** Fields */
+            fields: components["schemas"]["AnalysisFieldOut"][];
+            /** Name */
+            name: string;
+            /** Time Field */
+            time_field: string | null;
+        };
+        /** AnalysisExportIn */
+        AnalysisExportIn: {
+            /**
+             * Columns
+             * @default []
+             */
+            columns: string[];
+            /**
+             * Filters
+             * @default []
+             */
+            filters: components["schemas"]["Filter"][];
+            period?: components["schemas"]["Period"] | null;
+            sort?: components["schemas"]["SortSpec"] | null;
+            /**
+             * Widget Id
+             * Format: uuid
+             */
+            widget_id: string;
+        };
+        /** AnalysisFieldOut */
+        AnalysisFieldOut: {
+            /** Data Type */
+            data_type: string;
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
+            /** Role */
+            role: string;
+            /** Sensitivity */
+            sensitivity: string;
+        };
+        /** AnalysisFieldsOut */
+        AnalysisFieldsOut: {
+            /** Datasets */
+            datasets: components["schemas"]["AnalysisDatasetFieldsOut"][];
+        };
+        /**
+         * AnalysisFilter
+         * @description Filtro como o front o guarda: `src` separa o que veio de drill (breadcrumb) do que foi digitado.
+         */
+        AnalysisFilter: {
+            /** Field */
+            field: string;
+            /**
+             * Op
+             * @enum {string}
+             */
+            op: "eq" | "neq" | "in" | "gt" | "gte" | "lt" | "lte" | "between" | "contains";
+            /**
+             * Src
+             * @default manual
+             * @enum {string}
+             */
+            src: "drill" | "manual";
+            /**
+             * Time
+             * @default false
+             */
+            time: boolean;
+            /** Value */
+            value?: unknown;
+        };
+        /** AnalysisQueryIn */
+        AnalysisQueryIn: {
+            /**
+             * Filters
+             * @default []
+             */
+            filters: components["schemas"]["Filter"][];
+            override?: components["schemas"]["WidgetOverride"] | null;
+            period?: components["schemas"]["Period"] | null;
+            /**
+             * Widget Id
+             * Format: uuid
+             */
+            widget_id: string;
+        };
+        /** AnalysisRecordsIn */
+        AnalysisRecordsIn: {
+            /**
+             * Columns
+             * @default []
+             */
+            columns: string[];
+            /**
+             * Filters
+             * @default []
+             */
+            filters: components["schemas"]["Filter"][];
+            /**
+             * Limit
+             * @default 50
+             */
+            limit: number;
+            /**
+             * Offset
+             * @default 0
+             */
+            offset: number;
+            period?: components["schemas"]["Period"] | null;
+            sort?: components["schemas"]["SortSpec"] | null;
+            /**
+             * Widget Id
+             * Format: uuid
+             */
+            widget_id: string;
+        };
+        /** AnalysisRecordsOut */
+        AnalysisRecordsOut: {
+            /** Columns */
+            columns: components["schemas"]["AnalysisColumnOut"][];
+            /** Has More */
+            has_more: boolean;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Rows */
+            rows: {
+                [key: string]: unknown;
+            }[];
+            /** Total */
+            total: number;
+        };
+        /** AnalysisSearchHit */
+        AnalysisSearchHit: {
+            /** Count */
+            count?: number | null;
+            /**
+             * Dataset Id
+             * Format: uuid
+             */
+            dataset_id: string;
+            /** Dataset Name */
+            dataset_name: string;
+            /** Field */
+            field: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "field" | "value";
+            /** Label */
+            label: string;
+            /** Value */
+            value?: string | null;
+        };
+        /** AnalysisSearchOut */
+        AnalysisSearchOut: {
+            /** Hits */
+            hits: components["schemas"]["AnalysisSearchHit"][];
+        };
+        /** AnalysisValueOut */
+        AnalysisValueOut: {
+            /** Count */
+            count: number;
+            /** Value */
+            value: string;
+        };
+        /** AnalysisValuesOut */
+        AnalysisValuesOut: {
+            /** Values */
+            values: components["schemas"]["AnalysisValueOut"][];
+        };
+        /** AnalysisViewIn */
+        AnalysisViewIn: {
+            /** Name */
+            name: string;
+            state: components["schemas"]["AnalysisViewState"];
+        };
+        /** AnalysisViewOut */
+        AnalysisViewOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            state: components["schemas"]["AnalysisViewState"];
+        };
+        /** AnalysisViewState */
+        AnalysisViewState: {
+            /**
+             * Filters
+             * @default []
+             */
+            filters: components["schemas"]["AnalysisFilter"][];
+            /** Focus Widget Id */
+            focus_widget_id?: string | null;
+            period?: components["schemas"]["Period"] | null;
+        };
         /** ApiKeyState */
         ApiKeyState: {
             /** Configured */
@@ -1508,6 +1869,13 @@ export interface components {
              * @default []
              */
             filters: components["schemas"]["Filter"][];
+            /**
+             * Overrides
+             * @default {}
+             */
+            overrides: {
+                [key: string]: components["schemas"]["WidgetOverride"];
+            };
             period?: components["schemas"]["Period"] | null;
         };
         /** DatasetIn */
@@ -2380,6 +2748,17 @@ export interface components {
             /** Slug */
             slug: string;
         };
+        /** SortSpec */
+        SortSpec: {
+            /** By */
+            by: string;
+            /**
+             * Dir
+             * @default desc
+             * @enum {string}
+             */
+            dir: "asc" | "desc";
+        };
         /** TokenOut */
         TokenOut: {
             /** Access Token */
@@ -2562,6 +2941,18 @@ export interface components {
             x: number;
             /** Y */
             y: number;
+        };
+        /**
+         * WidgetOverride
+         * @description Ajuste transitorio de um widget na analise (drill/tela cheia). Nunca grava no painel.
+         */
+        WidgetOverride: {
+            /** Granularity */
+            granularity?: ("day" | "week" | "month" | "quarter" | "year") | null;
+            /** Group By */
+            group_by?: string | null;
+            /** Limit */
+            limit?: number | null;
         };
         /** WidgetPatch */
         WidgetPatch: {
@@ -2994,6 +3385,307 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["DashboardOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_api_v1_dashboards__did__analysis_export_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                did: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalysisExportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fields_api_v1_dashboards__did__analysis_fields_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                did: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisFieldsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    query_api_v1_dashboards__did__analysis_query_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                did: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalysisQueryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    records_api_v1_dashboards__did__analysis_records_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                did: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalysisRecordsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisRecordsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_api_v1_dashboards__did__analysis_search_get: {
+        parameters: {
+            query: {
+                q: string;
+            };
+            header?: never;
+            path: {
+                did: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisSearchOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    values_api_v1_dashboards__did__analysis_values_get: {
+        parameters: {
+            query: {
+                dataset_id: string;
+                field: string;
+                q?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                did: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisValuesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_views_api_v1_dashboards__did__analysis_views_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                did: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisViewOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_view_api_v1_dashboards__did__analysis_views_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                did: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalysisViewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalysisViewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_view_api_v1_dashboards__did__analysis_views__vid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                did: string;
+                vid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

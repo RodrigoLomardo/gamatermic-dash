@@ -1,7 +1,7 @@
 """Catalogo de widgets (MVP: 6 tipos) e validacao da config."""
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.errors import Unprocessable
 from app.modules.query.compiler import FieldMeta, validate_spec
@@ -22,6 +22,7 @@ class VizConfig(BaseModel):
     stacked: bool | None = None
     columns: list[dict] | None = None  # table: [{field,label,format}]
     drill_field: str | None = None  # campo filtrado no drill-down
+    drill_path: list[Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]{0,60}$")]] | None = Field(default=None, max_length=5)  # hierarquia (nivel 0 = dimensao do widget)
 
 
 # min_w/min_h: menor tamanho da visao completa. Abaixo disso (ate COMPACT_MIN) o frontend troca
@@ -59,10 +60,15 @@ def validate_widget(wtype: str, query_config: dict, viz_config: dict, fields: di
         raise Unprocessable(f"Tipo de widget inválido: {wtype}", code="invalid_widget")
     try:
         spec = QuerySpec.model_validate(query_config)
-        VizConfig.model_validate(viz_config)
+        viz = VizConfig.model_validate(viz_config)
     except Exception as e:  # noqa: BLE001
         raise Unprocessable(f"Configuração inválida: {e}", code="invalid_widget") from e
     validate_spec(spec, fields, time_field, raw_mode_ok=(wtype == "table"))
+    for name in viz.drill_path or []:
+        if name not in fields:
+            raise Unprocessable(f"Hierarquia de drill com campo inexistente: '{name}'.", code="unknown_field")
+        if fields[name].sensitivity == "pii":
+            raise Unprocessable(f"Campo pessoal não pode ser nível de drill: '{name}'.", code="invalid_widget")
     if wtype in ("kpi", "gauge") and (len(spec.measures) != 1 or spec.dimensions or spec.time or spec.columns):
         raise Unprocessable("KPI/medidor usam exatamente 1 medida, sem dimensões ou tempo.", code="invalid_widget")
     if wtype in ("bar", "pie") and (len(spec.dimensions) != 1 or len(spec.measures) < 1 or spec.time):

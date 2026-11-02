@@ -245,52 +245,93 @@ async def put_layout(session: AsyncSession, request: Request, p: Principal, did:
 
 
 # ---------------- dados ----------------
-def _apply_overrides(w: Widget, spec: QuerySpec, period: Period | None, filters: list[Filter], fields: dict[str, FieldMeta], time_field: str | None) -> QuerySpec:
+def guard_pii_filters(filters: list[Filter], fields: dict[str, FieldMeta], p: Principal) -> None:
+    """Filtrar por campo pessoal permitiria sondar o valor mascarado: so quem gerencia o dataset."""
+    if p.has("dataset:manage"):
+        return
+    for f in filters:
+        if f.field in fields and fields[f.field].sensitivity == "pii":
+            raise Unprocessable(f"Não é possível filtrar pelo campo pessoal '{f.field}'.", code="pii_filter")
+
+
+def _apply_overrides(w: Widget, spec: QuerySpec, period: Period | None, filters: list[Filter], fields: dict[str, FieldMeta], time_field: str | None) -> tuple[QuerySpec, list[str]]:
     upd: dict[str, Any] = {}
     if period is not None and w.follows_global_period and time_field:
         upd["period"] = period
     compatible = [f for f in filters if f.field in fields]  # filtros globais so valem em widgets que tem o campo
+    ignored = sorted({f.field for f in filters if f.field not in fields})
     if compatible:
         upd["filters"] = [*spec.filters, *compatible]
-    return spec.model_copy(update=upd) if upd else spec
+    return (spec.model_copy(update=upd) if upd else spec), ignored
 
 
-async def widget_result(session: AsyncSession, p: Principal, w: Widget, period: Period | None, filters: list[Filter], default_period: str | None) -> dict:
+def apply_group(w: Widget, spec: QuerySpec, ov: "sc.WidgetOverride | None", fields: dict[str, FieldMeta], time_field: str | None) -> QuerySpec:
+    """Regrupa o widget (drill de hierarquia / 'agrupar por') sem tocar na configuracao salva."""
+    if ov is None or spec.columns:
+        return spec
+    upd: dict[str, Any] = {}
+    if ov.group_by and w.type in ("bar", "pie", "line", "table"):
+        if ov.group_by not in fields:
+            raise Unprocessable(f"Campo inexistente: '{ov.group_by}'.", code="unknown_field")
+        if fields[ov.group_by].sensitivity == "pii":
+            raise Unprocessable(f"Campo pessoal não pode agrupar: '{ov.group_by}'.", code="invalid_query")
+        upd["dimensions"] = [ov.group_by]
+    if ov.granularity and spec.time:
+        upd["time"] = spec.time.model_copy(update={"granularity": ov.granularity})
+    if ov.limit:
+        upd["limit"] = ov.limit
+    if not upd:
+        return spec
+    new = spec.model_copy(update=upd)
+    keep = {m.alias for m in new.measures} | set(new.dimensions) | ({"time"} if new.time else set())
+    return new.model_copy(update={"sort": [s for s in new.sort if s.by in keep]})
+
+
+async def effective_spec(session: AsyncSession, p: Principal, w: Widget, period: Period | None, filters: list[Filter], default_period: str | None,
+                         ov: "sc.WidgetOverride | None" = None) -> tuple[Dataset, QuerySpec, list[str]]:
+    """Spec que o widget realmente executa: config salva + periodo/filtros globais + ajuste transitorio."""
+    if w.dataset_id is None:
+        raise Unprocessable("Widget sem dataset.", code="invalid_widget")
+    ds = await session.get(Dataset, w.dataset_id)
+    if ds is None:
+        raise Unprocessable("Dataset removido.", code="unknown_dataset")
+    fields = await executor.load_fields(session, ds.id)
+    guard_pii_filters(filters, fields, p)
+    spec = QuerySpec.model_validate(w.query_config)
+    if spec.period is None and ds.time_field and default_period and not (period and w.follows_global_period):
+        spec = spec.model_copy(update={"period": Period(mode="relative", preset=default_period)})  # type: ignore[arg-type]
+    spec, ignored = _apply_overrides(w, spec, period, filters, fields, ds.time_field)
+    return ds, apply_group(w, spec, ov, fields, ds.time_field), ignored
+
+
+async def widget_result(session: AsyncSession, p: Principal, w: Widget, period: Period | None, filters: list[Filter], default_period: str | None,
+                        override: "sc.WidgetOverride | None" = None) -> dict:
     base = {"widget_id": str(w.id), "type": w.type}
     try:
-        if w.dataset_id is None:
-            raise Unprocessable("Widget sem dataset.", code="invalid_widget")
-        ds = await session.get(Dataset, w.dataset_id)
-        if ds is None:
-            raise Unprocessable("Dataset removido.", code="unknown_dataset")
-        fields = await executor.load_fields(session, ds.id)
-        spec = QuerySpec.model_validate(w.query_config)
-        if spec.period is None and ds.time_field and default_period and not (period and w.follows_global_period):
-            spec = spec.model_copy(update={"period": Period(mode="relative", preset=default_period)})  # type: ignore[arg-type]
-        spec = _apply_overrides(w, spec, period, filters, fields, ds.time_field)
-        mask = not p.has("dataset:manage")
-        res = await executor.execute(session, ds.id, spec, mask_pii=mask)
+        ds, spec, ignored = await effective_spec(session, p, w, period, filters, default_period, override)
+        res = await executor.execute(session, ds.id, spec, mask_pii=not p.has("dataset:manage"))
         return {**base, "data": res["rows"], "previous": res["previous_rows"], "dataset_version": res["dataset_version"],
-                "data_as_of": res["data_as_of"], "generated_at": res["generated_at"], "period": res["period"], "error": None}
+                "data_as_of": res["data_as_of"], "generated_at": res["generated_at"], "period": res["period"], "ignored_filters": ignored, "error": None}
     except Exception as e:  # noqa: BLE001 - erro isolado por widget
         code = getattr(e, "code", "error")
         msg = getattr(e, "detail", None) or "Falha ao consultar os dados."
         return {**base, "data": None, "previous": None, "dataset_version": None, "data_as_of": None, "generated_at": None,
-                "period": None, "error": {"code": code, "message": msg}}
+                "period": None, "ignored_filters": [], "error": {"code": code, "message": msg}}
 
 
-async def dashboard_data(session: AsyncSession, p: Principal, d: Dashboard, period: Period | None, filters: list[Filter]) -> dict:
+async def dashboard_data(session: AsyncSession, p: Principal, d: Dashboard, period: Period | None, filters: list[Filter],
+                         overrides: "dict[uuid.UUID, sc.WidgetOverride] | None" = None) -> dict:
     widgets = await _widgets(session, d.id)
     results = []
     for w in widgets:  # sequencial: a sessao do request e compartilhada; cache evita custo repetido
-        results.append(await widget_result(session, p, w, period, filters, d.default_period))
+        results.append(await widget_result(session, p, w, period, filters, d.default_period, (overrides or {}).get(w.id)))
     return {"dashboard_id": str(d.id), "version": d.version, "widgets": results}
 
 
 async def data(session: AsyncSession, p: Principal, did: uuid.UUID, req: sc.DataRequest) -> dict:
     d = await get_dash(session, did)
     await check_view(session, p, d)
-    return await dashboard_data(session, p, d, req.period, req.filters)
+    return await dashboard_data(session, p, d, req.period, req.filters, req.overrides)
 
 
 async def preview_query(session: AsyncSession, p: Principal, req: sc.PreviewRequest) -> dict:

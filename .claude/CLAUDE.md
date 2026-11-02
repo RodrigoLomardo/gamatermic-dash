@@ -45,6 +45,8 @@ plano em `docs/planos/GAMA-FEAT-IA-DASHBOARDS.md`): `modules/settings` (chave ci
 e `modules/ai` (prompt só com metadados não-`pii`, saída JSON estrita, tradução para `QuerySpec` validado). Testes usam
 Groq falsa (`httpx.MockTransport`, `frontend/e2e/fake-groq.mjs`); qualidade com a conta real ainda não medida.
 
+**Painel analítico (desktop) implementado em 01/11/2026** ([ADR 0012](../docs/adr/0012-painel-analitico.md), plano `docs/planos/GAMA-FEAT-PAINEL-ANALITICO.md`): rota `/dashboards/:id/analise`, `modules/analysis` (campos, valores, busca, registros, exportação, visões), `DataRequest.overrides` para regrupar widgets sem gravar. **Chat por IA e POC de tradução (Etapas 1 e 5) não começaram.**
+
 **Pendentes que dependem de terceiros:**
 
 - Spike B no hardware real da TV (24 h, rede da empresa).

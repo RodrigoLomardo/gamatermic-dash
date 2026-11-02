@@ -3,7 +3,8 @@ import { get, post } from "@/shared/api/http";
 import type { S } from "@/shared/api/http";
 import type { DashboardData } from "../widgets/types";
 
-export type Filter = { field: string; op: "eq"; value: string };
+export type Filter = { field: string; op: "eq" | "neq" | "in" | "gte" | "lte" | "between" | "contains"; value: unknown };
+export type Override = { group_by?: string; granularity?: string; limit?: number };
 export type PeriodSel = { mode: "relative"; preset: string } | { mode: "absolute"; from: string; to: string };
 
 export const PRESETS: [string, string][] = [
@@ -16,12 +17,12 @@ export function useDashboard(id: string | undefined) {
   return useQuery({ queryKey: ["dashboard", id], enabled: !!id, queryFn: () => get<S["DashboardOut"]>(`/dashboards/${id}`) });
 }
 
-export function useDashboardData(id: string | undefined, period: PeriodSel | null, filters: Filter[], refreshSeconds: number) {
+export function useDashboardData(id: string | undefined, period: PeriodSel | null, filters: Filter[], refreshSeconds: number, overrides?: Record<string, Override>) {
   return useQuery({
-    queryKey: ["dashboard-data", id, period, filters],
+    queryKey: ["dashboard-data", id, period, filters, overrides ?? null],
     enabled: !!id,
     refetchInterval: Math.max(15, refreshSeconds) * 1000,
     placeholderData: (prev) => prev,
-    queryFn: () => post<DashboardData>(`/dashboards/${id}/data`, { period, filters }),
+    queryFn: () => post<DashboardData>(`/dashboards/${id}/data`, { period, filters, overrides: overrides ?? {} }),
   });
 }

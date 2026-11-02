@@ -160,6 +160,573 @@
     "title": "AiTestOut",
     "type": "object"
    },
+   "AnalysisColumnOut": {
+    "properties": {
+     "data_type": {
+      "title": "Data Type",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "sensitivity": {
+      "title": "Sensitivity",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name",
+     "label",
+     "data_type",
+     "sensitivity"
+    ],
+    "title": "AnalysisColumnOut",
+    "type": "object"
+   },
+   "AnalysisDatasetFieldsOut": {
+    "properties": {
+     "dataset_id": {
+      "format": "uuid",
+      "title": "Dataset Id",
+      "type": "string"
+     },
+     "fields": {
+      "items": {
+       "$ref": "#/components/schemas/AnalysisFieldOut"
+      },
+      "title": "Fields",
+      "type": "array"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "time_field": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Time Field"
+     }
+    },
+    "required": [
+     "dataset_id",
+     "name",
+     "time_field",
+     "fields"
+    ],
+    "title": "AnalysisDatasetFieldsOut",
+    "type": "object"
+   },
+   "AnalysisExportIn": {
+    "properties": {
+     "columns": {
+      "default": [],
+      "items": {
+       "pattern": "^[a-z][a-z0-9_]{0,60}$",
+       "type": "string"
+      },
+      "maxItems": 12,
+      "title": "Columns",
+      "type": "array"
+     },
+     "filters": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/Filter"
+      },
+      "maxItems": 20,
+      "title": "Filters",
+      "type": "array"
+     },
+     "period": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Period"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "sort": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/SortSpec"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "widget_id": {
+      "format": "uuid",
+      "title": "Widget Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "widget_id"
+    ],
+    "title": "AnalysisExportIn",
+    "type": "object"
+   },
+   "AnalysisFieldOut": {
+    "properties": {
+     "data_type": {
+      "title": "Data Type",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "role": {
+      "title": "Role",
+      "type": "string"
+     },
+     "sensitivity": {
+      "title": "Sensitivity",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name",
+     "label",
+     "data_type",
+     "role",
+     "sensitivity"
+    ],
+    "title": "AnalysisFieldOut",
+    "type": "object"
+   },
+   "AnalysisFieldsOut": {
+    "properties": {
+     "datasets": {
+      "items": {
+       "$ref": "#/components/schemas/AnalysisDatasetFieldsOut"
+      },
+      "title": "Datasets",
+      "type": "array"
+     }
+    },
+    "required": [
+     "datasets"
+    ],
+    "title": "AnalysisFieldsOut",
+    "type": "object"
+   },
+   "AnalysisFilter": {
+    "description": "Filtro como o front o guarda: `src` separa o que veio de drill (breadcrumb) do que foi digitado.",
+    "properties": {
+     "field": {
+      "pattern": "^[a-z][a-z0-9_]{0,60}$",
+      "title": "Field",
+      "type": "string"
+     },
+     "op": {
+      "enum": [
+       "eq",
+       "neq",
+       "in",
+       "gt",
+       "gte",
+       "lt",
+       "lte",
+       "between",
+       "contains"
+      ],
+      "title": "Op",
+      "type": "string"
+     },
+     "src": {
+      "default": "manual",
+      "enum": [
+       "drill",
+       "manual"
+      ],
+      "title": "Src",
+      "type": "string"
+     },
+     "time": {
+      "default": false,
+      "title": "Time",
+      "type": "boolean"
+     },
+     "value": {
+      "title": "Value"
+     }
+    },
+    "required": [
+     "field",
+     "op"
+    ],
+    "title": "AnalysisFilter",
+    "type": "object"
+   },
+   "AnalysisQueryIn": {
+    "properties": {
+     "filters": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/Filter"
+      },
+      "maxItems": 20,
+      "title": "Filters",
+      "type": "array"
+     },
+     "override": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/WidgetOverride"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "period": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Period"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "widget_id": {
+      "format": "uuid",
+      "title": "Widget Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "widget_id"
+    ],
+    "title": "AnalysisQueryIn",
+    "type": "object"
+   },
+   "AnalysisRecordsIn": {
+    "properties": {
+     "columns": {
+      "default": [],
+      "items": {
+       "pattern": "^[a-z][a-z0-9_]{0,60}$",
+       "type": "string"
+      },
+      "maxItems": 12,
+      "title": "Columns",
+      "type": "array"
+     },
+     "filters": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/Filter"
+      },
+      "maxItems": 20,
+      "title": "Filters",
+      "type": "array"
+     },
+     "limit": {
+      "default": 50,
+      "maximum": 200.0,
+      "minimum": 1.0,
+      "title": "Limit",
+      "type": "integer"
+     },
+     "offset": {
+      "default": 0,
+      "maximum": 100000.0,
+      "minimum": 0.0,
+      "title": "Offset",
+      "type": "integer"
+     },
+     "period": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Period"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "sort": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/SortSpec"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "widget_id": {
+      "format": "uuid",
+      "title": "Widget Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "widget_id"
+    ],
+    "title": "AnalysisRecordsIn",
+    "type": "object"
+   },
+   "AnalysisRecordsOut": {
+    "properties": {
+     "columns": {
+      "items": {
+       "$ref": "#/components/schemas/AnalysisColumnOut"
+      },
+      "title": "Columns",
+      "type": "array"
+     },
+     "has_more": {
+      "title": "Has More",
+      "type": "boolean"
+     },
+     "limit": {
+      "title": "Limit",
+      "type": "integer"
+     },
+     "offset": {
+      "title": "Offset",
+      "type": "integer"
+     },
+     "rows": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "title": "Rows",
+      "type": "array"
+     },
+     "total": {
+      "title": "Total",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "columns",
+     "rows",
+     "total",
+     "offset",
+     "limit",
+     "has_more"
+    ],
+    "title": "AnalysisRecordsOut",
+    "type": "object"
+   },
+   "AnalysisSearchHit": {
+    "properties": {
+     "count": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Count"
+     },
+     "dataset_id": {
+      "format": "uuid",
+      "title": "Dataset Id",
+      "type": "string"
+     },
+     "dataset_name": {
+      "title": "Dataset Name",
+      "type": "string"
+     },
+     "field": {
+      "title": "Field",
+      "type": "string"
+     },
+     "kind": {
+      "enum": [
+       "field",
+       "value"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "value": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Value"
+     }
+    },
+    "required": [
+     "kind",
+     "dataset_id",
+     "dataset_name",
+     "field",
+     "label"
+    ],
+    "title": "AnalysisSearchHit",
+    "type": "object"
+   },
+   "AnalysisSearchOut": {
+    "properties": {
+     "hits": {
+      "items": {
+       "$ref": "#/components/schemas/AnalysisSearchHit"
+      },
+      "title": "Hits",
+      "type": "array"
+     }
+    },
+    "required": [
+     "hits"
+    ],
+    "title": "AnalysisSearchOut",
+    "type": "object"
+   },
+   "AnalysisValueOut": {
+    "properties": {
+     "count": {
+      "title": "Count",
+      "type": "integer"
+     },
+     "value": {
+      "title": "Value",
+      "type": "string"
+     }
+    },
+    "required": [
+     "value",
+     "count"
+    ],
+    "title": "AnalysisValueOut",
+    "type": "object"
+   },
+   "AnalysisValuesOut": {
+    "properties": {
+     "values": {
+      "items": {
+       "$ref": "#/components/schemas/AnalysisValueOut"
+      },
+      "title": "Values",
+      "type": "array"
+     }
+    },
+    "required": [
+     "values"
+    ],
+    "title": "AnalysisValuesOut",
+    "type": "object"
+   },
+   "AnalysisViewIn": {
+    "properties": {
+     "name": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+     },
+     "state": {
+      "$ref": "#/components/schemas/AnalysisViewState"
+     }
+    },
+    "required": [
+     "name",
+     "state"
+    ],
+    "title": "AnalysisViewIn",
+    "type": "object"
+   },
+   "AnalysisViewOut": {
+    "properties": {
+     "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+     },
+     "id": {
+      "format": "uuid",
+      "title": "Id",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "state": {
+      "$ref": "#/components/schemas/AnalysisViewState"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "state",
+     "created_at"
+    ],
+    "title": "AnalysisViewOut",
+    "type": "object"
+   },
+   "AnalysisViewState": {
+    "properties": {
+     "filters": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/AnalysisFilter"
+      },
+      "maxItems": 20,
+      "title": "Filters",
+      "type": "array"
+     },
+     "focus_widget_id": {
+      "anyOf": [
+       {
+        "format": "uuid",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Focus Widget Id"
+     },
+     "period": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Period"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "title": "AnalysisViewState",
+    "type": "object"
+   },
    "ApiKeyState": {
     "properties": {
      "configured": {
@@ -696,6 +1263,18 @@
       },
       "title": "Filters",
       "type": "array"
+     },
+     "overrides": {
+      "additionalProperties": {
+       "$ref": "#/components/schemas/WidgetOverride"
+      },
+      "default": {},
+      "maxProperties": 40,
+      "propertyNames": {
+       "format": "uuid"
+      },
+      "title": "Overrides",
+      "type": "object"
      },
      "period": {
       "anyOf": [
@@ -3000,6 +3579,28 @@
     "title": "SectorOut",
     "type": "object"
    },
+   "SortSpec": {
+    "properties": {
+     "by": {
+      "title": "By",
+      "type": "string"
+     },
+     "dir": {
+      "default": "desc",
+      "enum": [
+       "asc",
+       "desc"
+      ],
+      "title": "Dir",
+      "type": "string"
+     }
+    },
+    "required": [
+     "by"
+    ],
+    "title": "SortSpec",
+    "type": "object"
+   },
    "TokenOut": {
     "properties": {
      "access_token": {
@@ -3402,6 +4003,56 @@
      "follows_global_period"
     ],
     "title": "WidgetOut",
+    "type": "object"
+   },
+   "WidgetOverride": {
+    "description": "Ajuste transitorio de um widget na analise (drill/tela cheia). Nunca grava no painel.",
+    "properties": {
+     "granularity": {
+      "anyOf": [
+       {
+        "enum": [
+         "day",
+         "week",
+         "month",
+         "quarter",
+         "year"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Granularity"
+     },
+     "group_by": {
+      "anyOf": [
+       {
+        "pattern": "^[a-z][a-z0-9_]{0,60}$",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Group By"
+     },
+     "limit": {
+      "anyOf": [
+       {
+        "maximum": 200.0,
+        "minimum": 1.0,
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Limit"
+     }
+    },
+    "title": "WidgetOverride",
     "type": "object"
    },
    "WidgetPatch": {
@@ -4168,6 +4819,493 @@
     "summary": "Patch",
     "tags": [
      "dashboards"
+    ]
+   }
+  },
+  "/api/v1/dashboards/{did}/analysis/export": {
+   "post": {
+    "operationId": "export_api_v1_dashboards__did__analysis_export_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "did",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Did",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AnalysisExportIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Export",
+    "tags": [
+     "analysis"
+    ]
+   }
+  },
+  "/api/v1/dashboards/{did}/analysis/fields": {
+   "get": {
+    "operationId": "fields_api_v1_dashboards__did__analysis_fields_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "did",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Did",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnalysisFieldsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Fields",
+    "tags": [
+     "analysis"
+    ]
+   }
+  },
+  "/api/v1/dashboards/{did}/analysis/query": {
+   "post": {
+    "operationId": "query_api_v1_dashboards__did__analysis_query_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "did",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Did",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AnalysisQueryIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Query",
+    "tags": [
+     "analysis"
+    ]
+   }
+  },
+  "/api/v1/dashboards/{did}/analysis/records": {
+   "post": {
+    "operationId": "records_api_v1_dashboards__did__analysis_records_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "did",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Did",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AnalysisRecordsIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnalysisRecordsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Records",
+    "tags": [
+     "analysis"
+    ]
+   }
+  },
+  "/api/v1/dashboards/{did}/analysis/search": {
+   "get": {
+    "operationId": "search_api_v1_dashboards__did__analysis_search_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "did",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Did",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "q",
+      "required": true,
+      "schema": {
+       "maxLength": 80,
+       "title": "Q",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnalysisSearchOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Search",
+    "tags": [
+     "analysis"
+    ]
+   }
+  },
+  "/api/v1/dashboards/{did}/analysis/values": {
+   "get": {
+    "operationId": "values_api_v1_dashboards__did__analysis_values_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "did",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Did",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "dataset_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Dataset Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "field",
+      "required": true,
+      "schema": {
+       "pattern": "^[a-z][a-z0-9_]{0,60}$",
+       "title": "Field",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "maxLength": 80,
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+       "default": 50,
+       "maximum": 50,
+       "minimum": 1,
+       "title": "Limit",
+       "type": "integer"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnalysisValuesOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Values",
+    "tags": [
+     "analysis"
+    ]
+   }
+  },
+  "/api/v1/dashboards/{did}/analysis/views": {
+   "get": {
+    "operationId": "list_views_api_v1_dashboards__did__analysis_views_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "did",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Did",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/AnalysisViewOut"
+         },
+         "title": "Response List Views Api V1 Dashboards  Did  Analysis Views Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Views",
+    "tags": [
+     "analysis"
+    ]
+   },
+   "post": {
+    "operationId": "create_view_api_v1_dashboards__did__analysis_views_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "did",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Did",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AnalysisViewIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnalysisViewOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create View",
+    "tags": [
+     "analysis"
+    ]
+   }
+  },
+  "/api/v1/dashboards/{did}/analysis/views/{vid}": {
+   "delete": {
+    "operationId": "delete_view_api_v1_dashboards__did__analysis_views__vid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "did",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Did",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "vid",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Vid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete View",
+    "tags": [
+     "analysis"
     ]
    }
   },

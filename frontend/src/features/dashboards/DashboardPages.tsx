@@ -47,7 +47,7 @@ export function DashboardViewPage() {
   const period: PeriodSel | null = preset ? { mode: "relative", preset } : null;
   const data = useDashboardData(id, period, filters, dash.data?.refresh_interval_seconds ?? 60);
   const results = useMemo(() => Object.fromEntries((data.data?.widgets ?? []).map((r) => [r.widget_id, r])), [data.data]);
-  const drill = (field: string, value: string) => setFilters((f) => (f.some((x) => x.field === field && x.value === value) ? f : [...f.filter((x) => x.field !== field), { field, op: "eq", value }]));
+  const drill = (field: string, value: string) => setFilters((f) => (f.some((x) => x.field === field && x.value === value) ? f : [...f.filter((x) => x.field !== field), { field, op: "eq" as const, value }]));
   if (dash.isLoading) return <Spinner />;
   if (dash.error) return <ErrorBox error={dash.error} />;
   const d = dash.data!;
@@ -65,9 +65,10 @@ export function DashboardViewPage() {
           <Select id="period" className="w-48" value={preset ?? d.default_period} onChange={(e) => setPreset(e.target.value)}>
             {PRESETS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
           </Select>
+          <Link to={`/dashboards/${d.id}/analise`}><Button>Análise</Button></Link>
           <Link to={`/tv/painel/${d.id}`}><Button variant="secondary">Abrir visualização (TV)</Button></Link>
           {can("grant:manage") && <Button variant="secondary" onClick={() => setShare(true)}>Compartilhar</Button>}
-          {d.can_edit && <Link to={`/dashboards/${d.id}/editar`}><Button>Editar</Button></Link>}
+          {d.can_edit && <Link to={`/dashboards/${d.id}/editar`}><Button variant="secondary">Editar</Button></Link>}
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-panel px-4 py-2">
@@ -79,7 +80,7 @@ export function DashboardViewPage() {
           <span className="text-sm text-ink-mute">Filtros:</span>
           {filters.map((f) => (
             <button key={f.field} className="rounded-full bg-accent-soft px-3 py-1 text-sm font-semibold text-accent-dark" aria-label={`Remover filtro ${f.field} ${f.value}`}
-              onClick={() => setFilters(filters.filter((x) => x !== f))}>{f.field}: {f.value} ✕</button>
+              onClick={() => setFilters(filters.filter((x) => x !== f))}>{f.field}: {String(f.value)} ✕</button>
           ))}
           <button className="text-sm font-semibold text-ink-soft underline" onClick={() => setFilters([])}>Limpar</button>
         </div>

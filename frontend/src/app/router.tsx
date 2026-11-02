@@ -8,6 +8,7 @@ import { Layout } from "./Layout";
 const L = (p: Promise<any>, name: string): LazyExoticComponent<ComponentType<any>> => lazy(() => p.then((m) => ({ default: m[name] })));
 const DashboardsListPage = L(import("@/features/dashboards/DashboardPages"), "DashboardsListPage");
 const DashboardViewPage = L(import("@/features/dashboards/DashboardPages"), "DashboardViewPage");
+const AnalysisPage = L(import("@/features/analysis/AnalysisPage"), "AnalysisPage");
 const EditorPage = L(import("@/features/dashboard-editor/EditorPage"), "EditorPage");
 const NewDashboardPage = L(import("@/features/dashboard-editor/EditorPage"), "NewDashboardPage");
 const DatasetsPage = L(import("@/features/datasets/DatasetPages"), "DatasetsPage");
@@ -61,6 +62,7 @@ export const router = createBrowserRouter([
           { path: "dashboards/nova", element: guard(<NewDashboardPage />, "dashboard:create") },
           { path: "dashboards/nova/ia", element: guard(<AiCreatePage />, "dashboard:create") },
           { path: "dashboards/:id", element: guard(<DashboardViewPage />, "dashboard:view") },
+          { path: "dashboards/:id/analise", element: guard(<AnalysisPage />, "dashboard:view") },
           { path: "dashboards/:id/editar", element: guard(<EditorPage />, "dashboard:edit") },
           { path: "datasets", element: guard(<DatasetsPage />, "dataset:view") },
           { path: "datasets/novo", element: guard(<NewDatasetPage />, "dataset:manage") },

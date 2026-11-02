@@ -46,9 +46,11 @@ async def load_fields(session: AsyncSession, dataset_id: uuid.UUID) -> dict[str,
     return {f.name: FieldMeta(f.name, f.data_type, f.role, f.sensitivity) for f in rows}
 
 
-async def _run(ds_id: uuid.UUID, time_field: str | None, fields: dict[str, FieldMeta], spec: QuerySpec, rng, mask_pii: bool) -> list[dict]:
+async def _run(ds_id: uuid.UUID, time_field: str | None, fields: dict[str, FieldMeta], spec: QuerySpec, rng, mask_pii: bool, offset: int = 0) -> list[dict]:
     """Sessao propria, somente leitura, com statement_timeout (no deploy usar role SELECT-only)."""
     q, names = compile_query(spec, ds_id, fields, time_field, rng, mask_pii=mask_pii)
+    if offset:
+        q = q.offset(offset)
     st = get_settings()
     async with get_sessionmaker()() as qs:
         try:
@@ -60,6 +62,19 @@ async def _run(ds_id: uuid.UUID, time_field: str | None, fields: dict[str, Field
             if "statement timeout" in str(e).lower() or "canceling statement" in str(e).lower():
                 raise Unprocessable("Consulta excedeu o tempo limite.", code="query_timeout") from e
             raise
+
+
+async def fetch_rows(session: AsyncSession, ds_id: uuid.UUID, spec: QuerySpec, *, mask_pii: bool = False, offset: int = 0) -> dict:
+    """Linhas de origem paginadas (drill-through/exportacao). Sem cache: o resultado depende da pagina."""
+    ds = await session.get(Dataset, ds_id)
+    if ds is None:
+        raise Unprocessable("Dataset inexistente.", code="unknown_dataset")
+    time_field, version = ds.time_field, ds.version
+    fields = await load_fields(session, ds_id)
+    if spec.period is not None and not time_field:
+        raise Unprocessable("Dataset sem campo de tempo; remova o período.", code="invalid_query")
+    rows = await _run(ds_id, time_field, fields, spec, resolve(spec.period), mask_pii, offset)
+    return {"rows": rows, "dataset_version": version}
 
 
 async def execute(session: AsyncSession, ds_id: uuid.UUID, spec: QuerySpec, *, mask_pii: bool = False) -> dict:

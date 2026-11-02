@@ -29,6 +29,10 @@ make lint    # ruff, mypy, import-linter, eslint, tsc
 
 Backend: 126 testes (auth, RBAC, auditoria, ingestão, query engine, dispositivos, migrações, configurações e IA com Groq falsa). Os testes usam o banco `gamatermic_test` e recriam o schema a cada execução.
 
+## Painel analítico (desktop)
+
+No painel, o botão **Análise** abre `/dashboards/:id/analise` ([ADR 0012](docs/adr/0012-painel-analitico.md)): período, filtros por campo (vários valores, exclusão, intervalo, texto), drill por clique em hierarquia (`viz_config.drill_path`) e por tempo (ano → trimestre → mês → dia), breadcrumb, tela cheia com troca de visual e "agrupar por", registros de origem paginados, busca, exportação CSV (`analysis:export`) e visões salvas. Tudo fica na URL (link reabre a mesma visão). Depois de atualizar: `make migrate` e `make bootstrap`.
+
 ## Assistente de IA (Groq)
 
 Gera sugestões de gráficos a partir de um pedido em texto ([ADR 0010](docs/adr/0010-ia-geracao-de-dashboards.md)). A IA recebe só nomes e tipos dos campos, nunca as linhas nem campos `pii`.

@@ -24,3 +24,12 @@ export const IconCopy = (p: P) => <svg {...base(p)} width={18} height={18}><rect
 export const IconLink = (p: P) => <svg {...base(p)} width={18} height={18}><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></svg>;
 export const IconPower = (p: P) => <svg {...base(p)} width={18} height={18}><path d="M12 3v8M6.3 6.8a8 8 0 1 0 11.4 0" /></svg>;
 export const IconTrash = (p: P) => <svg {...base(p)} width={18} height={18}><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 7M9 7V4.5h6V7" /></svg>;
+export const IconExpand = (p: P) => <svg {...base(p)} width={16} height={16}><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" /></svg>;
+export const IconRows = (p: P) => <svg {...base(p)} width={16} height={16}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 10h18M3 15h18M9 10v10" /></svg>;
+export const IconDownload = (p: P) => <svg {...base(p)} width={16} height={16}><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 20h14" /></svg>;
+export const IconBookmark = (p: P) => <svg {...base(p)} width={18} height={18}><path d="M6.5 4h11A1.5 1.5 0 0 1 19 5.5V21l-7-4.5L5 21V5.5A1.5 1.5 0 0 1 6.5 4z" /></svg>;
+export const IconX = (p: P) => <svg {...base(p)} width={14} height={14} strokeWidth={2.2}><path d="M6 6l12 12M18 6L6 18" /></svg>;
+export const IconFilter = (p: P) => <svg {...base(p)} width={16} height={16}><path d="M4 5h16l-6.2 7.4V19l-3.6-2v-4.6z" /></svg>;
+export const IconChevronRight = (p: P) => <svg {...base(p)} width={14} height={14} strokeWidth={2.2}><path d="M9 6l6 6-6 6" /></svg>;
+export const IconUndo = (p: P) => <svg {...base(p)} width={16} height={16}><path d="M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" /></svg>;
+export const IconCheck = (p: P) => <svg {...base(p)} width={14} height={14} strokeWidth={2.4}><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>;

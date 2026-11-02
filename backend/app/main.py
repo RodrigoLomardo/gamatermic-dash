@@ -15,6 +15,7 @@ from app.core.errors import install_handlers
 from app.core.events import broker
 from app.core.logging import configure_logging, get_logger
 from app.modules.ai.router import router as ai_router
+from app.modules.analysis.router import router as analysis_router
 from app.modules.audit.router import router as audit_router
 from app.modules.auth.router import router as auth_router
 from app.modules.dashboards.router import router as dashboards_router
@@ -37,7 +38,7 @@ CACHE_MISSES = Gauge("query_cache_misses", "Misses do cache de consultas")
 
 API_ROUTER = APIRouter(prefix="/api/v1")
 for _r in (health_router, auth_router, iam_router, audit_router, datasets_router, ingestion_router, dashboards_router,
-           devices_router, display_router, settings_router, ai_router):
+           devices_router, display_router, settings_router, ai_router, analysis_router):
     API_ROUTER.include_router(_r)
 
 

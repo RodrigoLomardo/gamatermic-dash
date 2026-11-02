@@ -161,7 +161,7 @@ def compile_query(spec: QuerySpec, dataset_id: uuid.UUID, fields: dict[str, Fiel
                 q = q.order_by(e.desc().nulls_last() if s.dir == "desc" else e.asc().nulls_last())
         if not spec.sort and time_field:
             q = q.order_by(DatasetRow.occurred_at.desc().nulls_last())
-        return q.limit(spec.limit), names
+        return q.order_by(DatasetRow.row_key).limit(spec.limit), names  # row_key desempata: paginacao estavel
 
     if spec.time:
         gran = spec.time.granularity

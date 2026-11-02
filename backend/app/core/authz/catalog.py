@@ -18,6 +18,7 @@ PERMISSIONS: dict[str, str] = {
     "group:manage": "Gerenciar grupos",
     "grant:manage": "Gerenciar concessões por recurso",
     "audit:view": "Consultar auditoria",
+    "analysis:export": "Exportar dados da análise (CSV)",
     "settings:manage": "Gerenciar configurações do sistema (IA)",
 }
 
@@ -29,7 +30,7 @@ SYSTEM_ROLES: dict[str, dict] = {
         "description": "Cria e edita dashboards e playlists.",
         "permissions": {
             "dashboard:view": "all", "dashboard:create": "all", "dashboard:edit": "all", "dashboard:delete": "all",
-            "dataset:view": "all", "dataset:query": "all", "playlist:manage": "all",
+            "dataset:view": "all", "dataset:query": "all", "playlist:manage": "all", "analysis:export": "all",
         },
     },
     "Operador de Dados": {

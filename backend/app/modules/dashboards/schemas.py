@@ -5,7 +5,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.modules.dashboards.widget_types import WidgetType
-from app.modules.query.spec import Filter, Period, QuerySpec
+from app.modules.query.spec import Filter, Granularity, Name, Period, QuerySpec
 
 
 class WidgetIn(BaseModel):
@@ -107,9 +107,17 @@ class LayoutPut(BaseModel):
     items: list[LayoutItem]
 
 
+class WidgetOverride(BaseModel):
+    """Ajuste transitorio de um widget na analise (drill/tela cheia). Nunca grava no painel."""
+    group_by: Name | None = None
+    granularity: Granularity | None = None
+    limit: int | None = Field(default=None, ge=1, le=200)
+
+
 class DataRequest(BaseModel):
     period: Period | None = None
     filters: list[Filter] = []
+    overrides: dict[uuid.UUID, WidgetOverride] = Field(default={}, max_length=40)
 
 
 class PreviewRequest(BaseModel):

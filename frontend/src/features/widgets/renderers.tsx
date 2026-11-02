@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Chart, cssVar, palette } from "@/shared/ui/Chart";
 import { cx } from "@/shared/ui/ui";
-import { deltaPct, fmt, fmtDate, fmtMonth, toNum } from "@/shared/lib/format";
+import { deltaPct, fmt, fmtDate, fmtPeriod, toNum } from "@/shared/lib/format";
 import type { RenderProps, Row, Viz } from "./types";
 
 const EMPTY: Row[] = [];
@@ -76,13 +76,14 @@ function baseText(tv: boolean) {
   return { color: cssVar("--ink-soft"), fontSize: tv ? 16 : 12, fontFamily: "Inter Variable, system-ui, sans-serif" };
 }
 
-export function LineW({ widget, result, tv }: RenderProps) {
+export function LineW({ widget, result, tv, onTimeDrill }: RenderProps) {
   const v = vz({ widget, result, tv });
   const rows = result.data ?? EMPTY;
+  const gran = (widget.query_config as { time?: { granularity?: string } }).time?.granularity;
   const option = useMemo(() => {
     const cols = palette();
     const dims = keysOf(rows, ["time"]);
-    const qc = widget.query_config as { dimensions?: string[]; measures?: { alias: string }[] };
+    const qc = widget.query_config as { dimensions?: string[]; measures?: { alias: string }[]; time?: { granularity?: string } };
     const dimKey = qc.dimensions?.[0];
     const measureKeys = dims.filter((k) => k !== dimKey);
     const times = [...new Set(rows.map((r) => String(r.time)))].sort();
@@ -100,13 +101,14 @@ export function LineW({ widget, result, tv }: RenderProps) {
       grid: { left: 8, right: 16, top: 16, bottom: 4, containLabel: true },
       tooltip: { trigger: "axis", valueFormatter: (x: number) => fmt(x, v.format) },
       legend: series.length > 1 ? { bottom: 0, textStyle: baseText(tv) } : undefined,
-      xAxis: { type: "category", data: times.map(fmtMonth), axisLabel: baseText(tv), axisLine: { lineStyle: { color: cssVar("--line") } } },
+      xAxis: { type: "category", data: times.map((t) => fmtPeriod(t, gran)), axisLabel: baseText(tv), axisLine: { lineStyle: { color: cssVar("--line") } } },
       yAxis: { type: "value", axisLabel: { ...baseText(tv), formatter: (x: number) => fmt(x, v.format, true).replace("R$ ", "") }, splitLine: { lineStyle: { color: cssVar("--line") } } },
       series,
     };
-  }, [rows, v.format, v.color, tv, widget.query_config]);
+  }, [rows, v.format, v.color, tv, widget.query_config, gran]);
   if (!rows.length) return <NoData />;
-  return <Chart option={option} label={widget.title} />;
+  const times = [...new Set(rows.map((r) => String(r.time)))].sort();
+  return <Chart option={option} label={widget.title} onIndexClick={onTimeDrill ? (i) => times[i] && onTimeDrill(times[i].slice(0, 10)) : undefined} />;
 }
 
 export function BarW({ widget, result, tv, onDrill }: RenderProps) {
