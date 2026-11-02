@@ -63,7 +63,7 @@ export function Layout() {
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="hidden items-center justify-between px-10 pt-8 md:flex">
-          <p className="text-sm tracking-wide text-ink-mute">Workspace <span className="mx-2 opacity-60">/</span> <span className="font-semibold text-ink-soft">Gama Termic</span></p>
+          <p className="text-sm tracking-wide text-ink-mute">Workspace <span className="mx-2 opacity-60">/</span> <span className="font-semibold text-ink-soft">Gamatermic</span></p>
           <ThemeToggle />
         </div>
         <main id="main" className="min-w-0 flex-1 p-4 md:px-10 md:pb-10 md:pt-6"><div className="page-in"><Outlet /></div></main>

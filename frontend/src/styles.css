@@ -149,7 +149,7 @@ body { transition: background-color .3s ease, color .3s ease; background: var(--
 .library-menu hr { margin:6px 4px; border:0; border-top:1px solid var(--line); }
 
 /* Previa ilustrativa animada */
-.pv { position:relative; height:168px; overflow:hidden; border-radius:19px 19px 0 0; background:linear-gradient(180deg, var(--pv-bg-a), var(--pv-bg-b)); perspective:900px; }
+.pv { position:relative; height:188px; overflow:hidden; border-radius:19px 19px 0 0; background:linear-gradient(180deg, var(--pv-bg-a), var(--pv-bg-b)); perspective:900px; }
 .pv-panel { position:absolute; inset:22px 26px 0; transform:rotateX(16deg) rotateZ(-1.4deg) translateY(8px); transform-origin:50% 100%; transition:transform .8s cubic-bezier(.2,.8,.2,1); }
 .library-card:hover .pv-panel, .library-card:focus-within .pv-panel { transform:rotateX(0) rotateZ(0) translateY(14px) scale(1.04); }
 .pv-float { height:100%; padding:20px 22px 0; display:grid; grid-template-columns:1.15fr 1fr; gap:26px; border:1px solid var(--line); border-bottom:0; border-radius:14px 14px 0 0; background:var(--pv-panel); animation:pv-float 6s ease-in-out infinite; }
@@ -170,8 +170,15 @@ body { transition: background-color .3s ease, color .3s ease; background: var(--
 .library-card:hover .pv-line::after { animation:pv-shimmer 1.4s ease-in-out infinite; animation-delay:calc(var(--i) * 120ms); }
 @keyframes pv-line { from { transform:scaleX(0); opacity:0; } to { transform:scaleX(1); opacity:1; } }
 @keyframes pv-shimmer { to { transform:translateX(100%); } }
-.pv-chip { position:absolute; right:0; bottom:0; padding:6px 14px; border-radius:12px 0 0 0; background:var(--panel); border:1px solid var(--line); border-right:0; border-bottom:0; font-size:11px; letter-spacing:.02em; color:var(--ink-mute); font-family:ui-monospace, SFMono-Regular, Menlo, monospace; }
-.pv-empty { display:flex; height:168px; align-items:center; justify-content:center; gap:10px; border-radius:19px 19px 0 0; background:var(--pv-bg-b); color:var(--ink-soft); font-size:14px; }
+.pv-skel { position:absolute; inset:22px 26px 0; border-radius:14px 14px 0 0; background:linear-gradient(100deg, var(--pv-panel) 30%, color-mix(in srgb, var(--pv-panel) 60%, var(--pv-bg-a)) 50%, var(--pv-panel) 70%); background-size:200% 100%; animation:pv-skel 1.4s ease-in-out infinite; }
+@keyframes pv-skel { from { background-position:100% 0; } to { background-position:-100% 0; } }
+.pv-live { position:absolute; inset:0; overflow:hidden; }
+.pv-live::after { content:""; position:absolute; inset:auto 0 0; height:44px; pointer-events:none; background:linear-gradient(transparent, var(--panel)); }
+.pv-canvas { position:absolute; left:0; top:0; width:1200px; pointer-events:none; user-select:none; transform-origin:0 0; transform:scale(var(--s)) translateY(0);
+  transition:transform 1s cubic-bezier(.3,.7,.2,1); animation:pv-live-in .7s cubic-bezier(.2,.8,.2,1) backwards; }
+.library-card:hover .pv-canvas, .library-card:focus-within .pv-canvas { transform:scale(var(--s)) translateY(var(--ny)); transition-duration:3.2s; transition-timing-function:cubic-bezier(.45,0,.25,1); }
+@keyframes pv-live-in { from { opacity:0; transform:scale(var(--s)) translateY(14px); } to { opacity:1; transform:scale(var(--s)) translateY(0); } }
+.pv-empty { display:flex; height:188px; align-items:center; justify-content:center; gap:10px; border-radius:19px 19px 0 0; background:var(--pv-bg-b); color:var(--ink-soft); font-size:14px; }
 .pv-empty svg { animation:pv-float 4s ease-in-out infinite; }
 
 /* Shell */
