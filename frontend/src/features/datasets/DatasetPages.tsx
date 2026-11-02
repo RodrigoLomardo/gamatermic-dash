@@ -6,6 +6,9 @@ import { ApiError, S, api, get, patch, post, put } from "@/shared/api/http";
 import { fmtDateTime } from "@/shared/lib/format";
 import { Badge, Button, Card, Empty, ErrorBox, Field, Input, Modal, Select, Spinner, Table, useToasts } from "@/shared/ui/ui";
 
+const MODE: Record<string, string> = { upsert: "Adicionar e atualizar registros", append: "Somente adicionar registros", replace_snapshot: "Substituir todos os dados" };
+const MODE_HELP: Record<string, string> = { upsert: "Registros com o mesmo identificador serão atualizados. Os novos serão adicionados.", append: "Todas as linhas serão adicionadas. Registros já existentes não serão atualizados.", replace_snapshot: "O arquivo deve conter a base completa. Os dados anteriores serão substituídos, inclusive removendo registros ausentes no novo arquivo." };
+const TYPES: Record<string, string> = { string: "Texto", integer: "Número inteiro", decimal: "Número decimal", date: "Data", datetime: "Data e hora", boolean: "Sim ou não", dimension: "Categoria", measure: "Valor para cálculo", time: "Período" };
 type Ds = S["DatasetOut"]; type Run = S["RunOut"];
 const TONE: Record<string, "ok" | "warn" | "danger" | "neutral" | "accent"> = { succeeded: "ok", succeeded_with_errors: "warn", failed: "danger", cancelled: "neutral", queued: "accent", running: "accent" };
 const LABEL: Record<string, string> = { succeeded: "Concluída", succeeded_with_errors: "Concluída com erros", failed: "Falhou", cancelled: "Cancelada", queued: "Na fila", running: "Processando" };
@@ -13,32 +16,38 @@ export const RunBadge = ({ status }: { status: string }) => <Badge tone={TONE[st
 
 export function DatasetsPage() {
   const { can } = useAuth();
+  const [search, setSearch] = useState("");
+  const [openRun, setOpenRun] = useState<string | null>(null);
   const ds = useQuery({ queryKey: ["datasets"], queryFn: () => get<Ds[]>("/datasets") });
   const runs = useQuery({ queryKey: ["runs-recent"], queryFn: () => get<Run[]>("/ingestion/runs", { query: { limit: 8 } }), enabled: can("ingestion:view"), refetchInterval: 5000 });
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between"><h1 className="text-2xl font-bold">Dados e cargas</h1>
-        {can("dataset:manage") && <Link to="/datasets/novo"><Button>Novo dataset a partir de arquivo</Button></Link>}</div>
+      <div className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-3xl font-bold">Suas bases de dados</h1><p className="mt-2 text-sm text-ink-soft">Importe planilhas e mantenha as informações dos seus dashboards atualizadas.</p></div>
+        {can("dataset:manage") && <Link to="/datasets/novo"><Button>＋ Nova base de dados</Button></Link>}</div>
       {ds.isLoading && <Spinner />}{ds.error && <ErrorBox error={ds.error} />}
-      <div className="grid gap-4 md:grid-cols-2">
-        {ds.data?.map((d) => (
-          <Card key={d.id}>
+      <div className="rounded-xl border border-line bg-panel p-5"><h2 className="font-semibold">Quer atualizar uma base existente?</h2><p className="mt-1 text-sm text-ink-soft">Abra a base abaixo e envie a nova planilha. Para organizar outro conjunto de informações, escolha “Nova base de dados”.</p></div>
+      <Input aria-label="Buscar base de dados" placeholder="Buscar base pelo nome…" value={search} onChange={e => setSearch(e.target.value)} />
+      <div className="grid gap-5 md:grid-cols-2">
+        {ds.data?.filter(d => d.name.toLocaleLowerCase("pt-BR").includes(search.toLocaleLowerCase("pt-BR"))).map((d) => (
+          <Card key={d.id} className="transition hover:border-accent">
             <Link to={`/datasets/${d.id}`} className="block">
               <div className="flex items-start justify-between gap-2"><h2 className="text-lg font-semibold text-brand">{d.name}</h2>{d.stale && <Badge tone="warn">Atrasado</Badge>}</div>
               <p className="text-sm text-ink-soft">{d.description}</p>
               <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
-                <div><dt className="text-xs text-ink-mute">Linhas</dt><dd className="tabular font-semibold">{d.row_count.toLocaleString("pt-BR")}</dd></div>
-                <div><dt className="text-xs text-ink-mute">Modo</dt><dd className="font-semibold">{d.load_mode}</dd></div>
-                <div><dt className="text-xs text-ink-mute">Última carga</dt><dd className="font-semibold">{fmtDateTime(d.last_loaded_at)}</dd></div>
+                <div><dt className="text-xs text-ink-mute">Registros</dt><dd className="tabular font-semibold">{d.row_count.toLocaleString("pt-BR")}</dd></div>
+                <div><dt className="text-xs text-ink-mute">Ao enviar um arquivo</dt><dd className="font-semibold">{MODE[d.load_mode] ?? d.load_mode}</dd></div>
+                <div><dt className="text-xs text-ink-mute">Última atualização</dt><dd className="font-semibold">{d.last_loaded_at ? fmtDateTime(d.last_loaded_at) : "Nenhum arquivo importado"}</dd></div>
               </dl>
+              <div className="mt-5 border-t border-line pt-4 text-sm font-semibold text-accent-dark">Abrir base e ver dados →</div>
             </Link>
           </Card>
         ))}
       </div>
-      {ds.data?.length === 0 && <Empty>Nenhum dataset ainda.</Empty>}
+      {ds.data?.length === 0 && <Empty>Nenhuma base criada. Comece em “Nova base de dados” e escolha uma planilha.</Empty>}
+      {openRun && <RunDetail runId={openRun} onClose={() => setOpenRun(null)} />}
       {can("ingestion:view") && (
-        <Card title="Cargas recentes">
-          <RunsTable runs={runs.data ?? []} />
+        <Card title="Importações recentes">
+          {runs.error && <ErrorBox error={runs.error} />}<RunsTable runs={runs.data ?? []} onOpen={r => setOpenRun(r.id)} />
         </Card>
       )}
     </div>
@@ -47,7 +56,7 @@ export function DatasetsPage() {
 
 export function RunsTable({ runs, onOpen }: { runs: Run[]; onOpen?: (r: Run) => void }) {
   return (
-    <Table head={["Quando", "Dataset", "Arquivo", "Status", "Lidas", "Novas", "Atual.", "Iguais", "Rejeit."]} empty={runs.length === 0 && <p className="p-4 text-center text-ink-mute">Sem cargas.</p>}>
+    <Table head={["Quando", "Base", "Arquivo", "Status", "Lidas", "Adicionadas", "Atualizadas", "Sem alteração", "Não importadas"]} empty={runs.length === 0 && <p className="p-4 text-center text-ink-mute">Nenhum arquivo importado ainda.</p>}>
       {runs.map((r) => (
         <tr key={r.id} className={onOpen ? "cursor-pointer hover:bg-brand-soft" : ""} onClick={() => onOpen?.(r)}>
           <td className="px-3 py-2">{fmtDateTime(r.created_at)}</td><td className="px-3 py-2">{r.dataset_slug}</td>
@@ -70,7 +79,7 @@ export function RunDetail({ runId, onClose }: { runId: string; onClose: () => vo
   };
   const r = run.data;
   return (
-    <Modal open wide title="Detalhe da carga" onClose={onClose}>
+    <Modal open wide title="Resultado da importação" onClose={onClose}>
       {!r ? <Spinner /> : (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3"><RunBadge status={r.status} /><span className="text-sm text-ink-soft">{r.file_name} → {r.dataset_slug}</span></div>
@@ -112,7 +121,7 @@ export function UploadBox({ dataset }: { dataset: Ds }) {
       <div onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)} onDrop={drop}
         className={`rounded-xl border-2 border-dashed p-8 text-center ${over ? "border-accent bg-accent-soft" : "border-line"}`}>
         <p className="font-semibold">Arraste um arquivo .csv ou .xlsx aqui</p>
-        <p className="mb-3 text-sm text-ink-mute">Até 20 MB · modo de carga: <b>{dataset.load_mode}</b>{dataset.load_mode === "replace_snapshot" && " (o arquivo é o estado completo; o que sumiu é removido)"}</p>
+        <p className="mb-3 text-sm text-ink-mute">Até 20 MB · Excel (.xlsx) ou CSV</p><p className="mx-auto mb-4 max-w-2xl text-sm text-ink-soft"><b>{MODE[dataset.load_mode]}</b>. {MODE_HELP[dataset.load_mode]}</p>
         <div className="mb-3 flex items-center justify-center gap-2"><label className="text-sm" htmlFor="sheet">Aba (xlsx)</label><Input id="sheet" className="w-48" value={sheet} onChange={(e) => setSheet(e.target.value)} placeholder="primeira aba" /></div>
         <input ref={inp} type="file" hidden accept=".csv,.txt,.xlsx" aria-label="Selecionar arquivo" onChange={(e) => e.target.files?.[0] && up.mutate(e.target.files[0])} />
         <Button onClick={() => inp.current?.click()} disabled={up.isPending}>{up.isPending ? "Enviando…" : "Escolher arquivo"}</Button>
@@ -132,12 +141,12 @@ export function DatasetDetailPage() {
   const d = ds.data!;
   return (
     <div className="space-y-4">
-      <Link to="/datasets" className="text-sm text-ink-mute hover:underline">← Dados e cargas</Link>
+      <Link to="/datasets" className="text-sm text-ink-mute hover:underline">← Suas bases de dados</Link>
       <div className="flex flex-wrap items-center gap-3"><h1 className="text-2xl font-bold">{d.name}</h1>{d.stale && <Badge tone="warn">Dados atrasados</Badge>}<Badge>{d.row_count.toLocaleString("pt-BR")} linhas</Badge><Badge tone="accent">v{d.version}</Badge></div>
       <p className="text-sm text-ink-soft">{d.description} Última carga: {fmtDateTime(d.last_loaded_at)}. Chave: {d.key_fields.join(" + ") || "—"}.</p>
       {can("ingestion:upload") && <UploadBox dataset={d} />}
-      {can("ingestion:view") && <Card title="Histórico de cargas"><RunsTable runs={runs.data ?? []} onOpen={(r) => setOpen(r.id)} /></Card>}
-      <Card title="Campos">
+      {can("ingestion:view") && <Card title="Histórico de importações"><RunsTable runs={runs.data ?? []} onOpen={(r) => setOpen(r.id)} /></Card>}
+      <Card title="Configuração das colunas">
         <Table head={["Campo", "Rótulo", "Tipo", "Papel", "Coluna no arquivo", "Sensível"]}>
           {d.fields.map((f) => <tr key={f.name}><td className="px-3 py-1.5 font-mono text-xs">{f.name}{f.is_key && " 🔑"}</td><td className="px-3 py-1.5">{f.label}</td><td className="px-3 py-1.5">{f.data_type}</td><td className="px-3 py-1.5">{f.role}</td><td className="px-3 py-1.5">{f.source_column}</td><td className="px-3 py-1.5">{f.sensitivity === "pii" ? <Badge tone="warn">PII mascarado</Badge> : "—"}</td></tr>)}
         </Table>
@@ -154,45 +163,67 @@ export function DatasetDetailPage() {
 
 export function NewDatasetPage() {
   const nav = useNavigate(); const toast = useToasts((s) => s.push);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [fileError, setFileError] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [inf, setInf] = useState<S["InferOut"] | null>(null);
   const [fields, setFields] = useState<S["InferredField"][]>([]);
   const [meta, setMeta] = useState({ name: "", slug: "", mode: "upsert" });
   const infer = async (f: File, sheet?: string) => {
-    setFile(f);
+    if (busy) return;
+    setInf(null); setFields([]); setFileError("");
+    if (!/\.(csv|txt|xlsx)$/i.test(f.name) || f.size > 20 * 1024 * 1024) { setFileError("Escolha um arquivo CSV ou Excel (.xlsx) de até 20 MB."); return; }
+    setBusy(true); setFile(f);
     const fd = new FormData(); fd.append("file", f); if (sheet) fd.append("sheet", sheet);
-    try { const r = await api<S["InferOut"]>("POST", "/datasets/infer-schema", { form: fd }); setInf(r); setFields(r.columns); } catch (e) { toast((e as Error).message, "danger"); }
+    try { const r = await api<S["InferOut"]>("POST", "/datasets/infer-schema", { form: fd }); setInf(r); setFields(r.columns); } catch (e) { setFileError((e as Error).message); } finally { setBusy(false); }
   };
   const upd = (i: number, p: Partial<S["InferredField"]>) => setFields(fields.map((f, j) => (j === i ? { ...f, ...p } : f)));
   const create = async () => {
+    if (saving) return;
+    setSaving(true);
     const tf = fields.find((f) => f.role === "time")?.name;
     try {
       const ds = await post<Ds>("/datasets", { slug: meta.slug, name: meta.name, load_mode: meta.mode, time_field: tf, parser_options: { sheet: inf?.sheet ?? undefined }, fields: fields.map(({ sample: _s, ...f }) => f) });
-      toast("Dataset criado."); nav(`/datasets/${ds.id}`);
-    } catch (e) { toast((e as Error).message, "danger"); }
+      toast("Base criada. Agora envie o arquivo para importar os dados."); nav(`/datasets/${ds.id}`);
+    } catch (e) { toast((e as Error).message, "danger"); } finally { setSaving(false); }
   };
   void patch; void put;
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Novo dataset</h1>
-      <Card title="1. Arquivo de amostra"><input type="file" accept=".csv,.txt,.xlsx" aria-label="Arquivo de amostra" onChange={(e) => e.target.files?.[0] && infer(e.target.files[0])} />
+    <div className="dataset-setup space-y-6">
+      <Link to="/datasets" className="text-sm text-ink-mute hover:underline">← Voltar para suas bases</Link>
+      <header><p className="mb-2 text-xs font-semibold uppercase tracking-widest text-accent-dark">Prepare seus dados</p><h1 className="text-3xl font-bold tracking-tight">Uma nova base, em poucos passos</h1><p className="mt-3 text-ink-soft">Comece com uma planilha. Vamos ajudar você a organizar as informações para seus dashboards.</p></header>
+      <ol className="setup-steps" aria-label="Etapas da configuração">
+        {["Escolher arquivo", "Configurar a base", "Revisar colunas"].map((label, i) => <li key={label} className={inf || i === 0 ? "active" : ""}><span>{i === 0 && inf ? "✓" : i + 1}</span>{label}</li>)}
+      </ol>
+      <Card title="1. Escolha uma planilha para configurar a base"><div className="setup-upload" onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); if (e.dataTransfer.files[0]) void infer(e.dataTransfer.files[0]); }} aria-busy={busy}>
+          <span className="setup-upload-icon" aria-hidden="true">↑</span>
+          <h2 className="mt-4 text-lg font-semibold">{busy ? "Analisando sua planilha…" : inf ? file?.name : "Sua planilha é o ponto de partida"}</h2>
+          <p className="mt-2 text-sm text-ink-soft">{inf ? `${fields.length} colunas reconhecidas. Continue a configuração abaixo.` : "Arraste o arquivo para cá ou escolha uma planilha no seu computador."}</p>
+          <input ref={fileInput} hidden type="file" accept=".csv,.txt,.xlsx" aria-label="Arquivo de amostra" disabled={busy} onChange={e => { if (e.target.files?.[0]) void infer(e.target.files[0]); e.target.value = ""; }} />
+          <div className="mt-5"><Button variant={inf ? "secondary" : undefined} disabled={busy} onClick={() => fileInput.current?.click()}>{busy ? "Aguarde…" : inf ? "Trocar arquivo" : "Escolher planilha"}</Button></div>
+          <p className="mt-3 text-xs text-ink-mute">Excel (.xlsx) ou CSV · Até 20 MB</p>
+        </div>
+        {fileError && <p role="alert" className="mt-3 text-sm text-danger">{fileError}</p>}
+        <p className="mt-4 text-sm text-ink-mute">Nesta etapa, vamos apenas reconhecer as colunas. Os registros serão importados após a criação da base.</p>
         {inf && inf.sheets.length > 1 && <div className="mt-3 w-64"><Field label="Aba">{(id) => <Select id={id} value={inf.sheet ?? ""} onChange={(e) => infer(file!, e.target.value)}>{inf.sheets.map((s) => <option key={s}>{s}</option>)}</Select>}</Field></div>}
       </Card>
       {inf && (
         <>
-          <Card title="2. Identificação"><div className="grid gap-3 md:grid-cols-3">
+          <Card title="2. Dê um nome e escolha como atualizar"><div className="grid gap-3 md:grid-cols-3">
             <Field label="Nome">{(id) => <Input id={id} value={meta.name} onChange={(e) => setMeta({ ...meta, name: e.target.value, slug: e.target.value.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") })} />}</Field>
-            <Field label="Identificador (slug)">{(id) => <Input id={id} value={meta.slug} onChange={(e) => setMeta({ ...meta, slug: e.target.value })} />}</Field>
-            <Field label="Modo de carga" hint="upsert: atualiza pela chave · append: só adiciona · replace_snapshot: o arquivo é o estado completo">{(id) => <Select id={id} value={meta.mode} onChange={(e) => setMeta({ ...meta, mode: e.target.value })}><option>upsert</option><option>append</option><option>replace_snapshot</option></Select>}</Field>
+            <details className="rounded-lg border border-line p-3"><summary className="cursor-pointer text-sm text-ink-soft">Opção avançada</summary><Field label="Identificador interno">{(id) => <Input id={id} value={meta.slug} onChange={(e) => setMeta({ ...meta, slug: e.target.value })} />}</Field></details>
+            <Field label="Como atualizar os dados" hint={MODE_HELP[meta.mode]}>{(id) => <Select id={id} value={meta.mode} onChange={(e) => setMeta({ ...meta, mode: e.target.value })}>{Object.entries(MODE).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</Select>}</Field>
           </div></Card>
-          <Card title="3. Campos (marque a chave natural)" pad={false}>
-            <Table head={["Coluna", "Campo", "Tipo", "Papel", "Chave", "Obrigatório", "Exemplos"]}>
+          <Card title="3. Revise as colunas e identifique cada registro" pad={false}>
+            <p className="px-5 py-4 text-sm text-ink-soft">Confira os formatos sugeridos. Marque como identificador a coluna que distingue cada registro, como o número do pedido.</p><Table head={["Coluna", "Nome interno", "Formato", "Uso no dashboard", "Identifica o registro", "Obrigatório", "Exemplos"]}>
               {fields.map((f, i) => (
                 <tr key={f.source_column}>
                   <td className="px-3 py-1.5">{f.source_column}</td>
                   <td className="px-3 py-1.5"><Input aria-label={`Nome do campo ${f.source_column}`} value={f.name} onChange={(e) => upd(i, { name: e.target.value })} /></td>
-                  <td className="px-3 py-1.5"><Select aria-label={`Tipo ${f.source_column}`} value={f.data_type} onChange={(e) => upd(i, { data_type: e.target.value })}>{["string", "integer", "decimal", "date", "datetime", "boolean"].map((t) => <option key={t}>{t}</option>)}</Select></td>
-                  <td className="px-3 py-1.5"><Select aria-label={`Papel ${f.source_column}`} value={f.role} onChange={(e) => upd(i, { role: e.target.value })}>{["dimension", "measure", "time"].map((t) => <option key={t}>{t}</option>)}</Select></td>
+                  <td className="px-3 py-1.5"><Select aria-label={`Tipo ${f.source_column}`} value={f.data_type} onChange={(e) => upd(i, { data_type: e.target.value })}>{["string", "integer", "decimal", "date", "datetime", "boolean"].map((t) => <option key={t} value={t}>{TYPES[t] ?? t}</option>)}</Select></td>
+                  <td className="px-3 py-1.5"><Select aria-label={`Papel ${f.source_column}`} value={f.role} onChange={(e) => upd(i, { role: e.target.value })}>{["dimension", "measure", "time"].map((t) => <option key={t} value={t}>{TYPES[t] ?? t}</option>)}</Select></td>
                   <td className="px-3 py-1.5 text-center"><input type="checkbox" aria-label={`Chave ${f.source_column}`} checked={!!f.is_key} onChange={(e) => upd(i, { is_key: e.target.checked })} /></td>
                   <td className="px-3 py-1.5 text-center"><input type="checkbox" aria-label={`Obrigatório ${f.source_column}`} checked={!f.nullable} onChange={(e) => upd(i, { nullable: !e.target.checked })} /></td>
                   <td className="max-w-[14rem] truncate px-3 py-1.5 text-xs text-ink-mute">{f.sample?.join(" · ")}</td>
@@ -200,8 +231,8 @@ export function NewDatasetPage() {
               ))}
             </Table>
           </Card>
-          <Button disabled={!meta.name || !meta.slug || (meta.mode !== "append" && !fields.some((f) => f.is_key))} onClick={create}>Criar dataset</Button>
-          {meta.mode !== "append" && !fields.some((f) => f.is_key) && <p className="text-sm text-warn">Marque ao menos um campo como chave (ex.: número do pedido).</p>}
+          <Button disabled={saving || busy || !meta.name || !meta.slug || (meta.mode !== "append" && !fields.some((f) => f.is_key))} onClick={create}>{saving ? "Criando base…" : "Criar base e continuar →"}</Button>
+          {meta.mode !== "append" && !fields.some((f) => f.is_key) && <p className="text-sm text-warn">Marque a coluna que identifica cada registro, como o número do pedido. Isso permite reconhecer registros nas próximas importações.</p>}
         </>
       )}
     </div>

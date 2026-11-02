@@ -333,3 +333,13 @@ body { transition: background-color .3s ease, color .3s ease; background: var(--
 .an-compose { display:flex; align-items:flex-end; gap:8px; padding:6px 6px 6px 12px; border:1px solid var(--line); border-radius:14px; background:var(--surface); transition:border-color .2s, box-shadow .2s; }
 .an-compose:focus-within { border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
 .an-compose textarea { flex:1; min-height:34px; max-height:110px; padding:7px 0; resize:none; background:transparent; color:var(--ink); font-size:14px; outline:none; field-sizing:content; }
+
+.dataset-setup { max-width: 1180px; margin: 0 auto; padding-bottom: 48px; }
+.setup-steps { display: flex; flex-wrap: wrap; gap: 24px; padding: 22px 0; border-bottom: 1px solid var(--line); }
+.setup-steps li { display: flex; align-items: center; gap: 10px; color: var(--ink-mute); font-size: 14px; }
+.setup-steps li span { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 50%; font-weight: 600; }
+.setup-steps li.active { color: var(--ink); }
+.setup-steps li.active span { background: var(--accent-soft); color: var(--accent-dark); border-color: var(--accent); }
+.setup-upload { border: 2px dashed var(--line); border-radius: 14px; padding: 36px 20px; text-align: center; background: var(--surface); }
+.setup-upload:hover { border-color: var(--accent); }
+.setup-upload-icon { display: grid; place-items: center; width: 52px; height: 52px; margin: auto; border-radius: 16px; background: var(--accent-soft); color: var(--accent-dark); font-size: 30px; }
