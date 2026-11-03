@@ -163,3 +163,14 @@ async def test_force_period_applies_to_widgets_with_own_period(client, admin):
 
     assert await n({"period": jan}) == 5  # sem force: o periodo proprio do widget vence
     assert await n({"period": jan, "force_period": True}) == 2
+
+
+async def test_follows_dashboard_uses_default_period_over_own(client, admin):
+    ds, did, wid = await _setup(client, admin)
+    assert (await client.patch(f"{API}/dashboards/{did}", headers=admin, json={"default_period": "all"})).status_code == 200
+    own = {"measures": [{"agg": "count", "alias": "n"}], "period": {"mode": "relative", "preset": "this_month"}}
+    r = await client.post(f"{API}/dashboards/{did}/widgets", headers=admin, json={
+        "type": "kpi", "title": "Segue", "dataset_id": ds["id"], "x": 6, "y": 0, "w": 3, "h": 3, "query_config": own, "viz_config": {}, "follows_global_period": True})
+    kid = r.json()["widgets"][-1]["id"]
+    res = (await client.post(f"{API}/dashboards/{did}/data", headers=admin, json={})).json()["widgets"]  # sem periodo escolhido na tela
+    assert next(w for w in res if w["widget_id"] == kid)["data"][0]["n"] == 5  # segue o padrao da dashboard, nao o proprio

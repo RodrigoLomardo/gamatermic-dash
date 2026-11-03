@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { IconChevronRight, IconExpand, IconRows, IconSparkles, IconUndo } from "@/app/icons";
+import { IconChevronRight, IconExpand, IconPencil, IconRows, IconSparkles, IconUndo } from "@/app/icons";
 import { fmtDateTime } from "@/shared/lib/format";
 import { Badge, Button, Empty, ErrorBox, Spinner, cx } from "@/shared/ui/ui";
 import { useMedia } from "@/shared/hooks/useMedia";
@@ -104,6 +104,7 @@ export function AnalysisPage() {
             onField={(h) => { setPresetField(h.field); setAdding(true); }} />
           {chatStatus.data?.available && <button type="button" className="an-ask" aria-pressed={chatOpen} onClick={() => setChatOpen((o) => !o)}><IconSparkles width={16} height={16} />Perguntar à IA</button>}
           <ViewsMenu id={d.id} current={view} onApply={(v) => set(v)} />
+          {d.can_edit && <Link to={`/dashboards/${d.id}/editar`}><Button variant="secondary"><IconPencil />Editar</Button></Link>}
         </div>
       </header>
 

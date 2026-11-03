@@ -49,7 +49,7 @@ Esforço: S (1–2 semanas) · M (2–4 semanas) · L (4–8 semanas) · XL (8+ 
 - **Problema [Código]:** `DataSource.schedule_cron` existe no modelo (`datasets/models.py:30`) mas nenhum código agenda; a carga é manual (upload ou `make import`). O sistema sabe quando o dado está velho (`freshness_sla_seconds` → badge "stale" em `datasets/service.py:37` e na TV em `display/router.py:87`) mas não faz nada a respeito.
 - **Valor:** dados sempre frescos para painéis e TV; elimina o processo manual recorrente; base para alertas (C) e SLAs de frescor visíveis.
 - **O que entra:** definição de recorrência por fonte (cron) na tela de dataset; tick de agendamento no worker que enfileira jobs de `run_ingestion` existentes; estado de "próxima carga" e histórico de execuções no UI.
-- **Decisão tecnológica [Proposta]:** **sem nova dependência de infraestrutura** — o worker (`workers/runner.py`) já roda um loop com ticks de 60 s (`housekeeping`) e 6 h (`purge`); adicionar um tick de scheduler que avalia os `schedule_cron` e enfileira. Parse do cron com biblioteca `croniter` (dependência leve de Python) ou expressões simples de intervalo (a cada N dias/horas) no MVP.
+- **Decisão tecnológica [Proposta]:** **sem nova dependência de infraestrutura** — o worker (`workers/runner.py`) já roda um loop com ticks de 60 s (`housekeeping`) e 6 h (`purge`); adicionar um tick de scheduler que avalia os `schedule_cron` e enfileira. Parse do cron com biblioteca `croniter` (dependência leve de Python) ou expressões simples de intervalo (a cada N dias/horas) no MVP.N
   - Alternativas: processo APScheduler separado (mais um processo para operar), Celery/Redis (fora — anti-escopo explícito). Consequência de não fazer: dados continuam manuais.
 - **Concorrência:** já resolvida pela fila (`claim_next` com `FOR UPDATE SKIP LOCKED`) e pela idempotência por `row_key` — cargas simultâneas do mesmo dataset são inofensivas, mas o MVP deve evitar disparos duplicados (checar `IngestionRun` em execução).
 - **Maior incerteza [Proposta]:** nenhuma técnica real — é adicionar um tick a código que já existe. Validação: agendar carga diária em ambiente dev e observar 3 execuções sem intervenção.
@@ -130,18 +130,23 @@ Esforço: S (1–2 semanas) · M (2–4 semanas) · L (4–8 semanas) · XL (8+ 
 Estas decisões não são features, mas bloqueiam ou informam várias candidatas acima. Algumas já estão registradas como pendentes em documentos internos.
 
 ### 4.1 D1 — Enviar agregados ao provedor de IA para insights
+
 **Fonte:** `GAMA-FEAT-PAINEL-ANALITICO.md` §14-D1 · **Recomendação [Proposta]:** autorizar apenas agregados, nunca linhas nem PII — registrando em ADR finalidade, retenção e modelo. Impacta F (insights) e qualquer evolução do chat. Sem ela, insights não saem do papel.
 
 ### 4.2 D2/D3 — POC do chat com perguntas reais; persistir conversas
+
 **Fonte:** plano §14-D2/D3 · **Recomendação [Proposta]:** coletar 30 perguntas de 3–5 gestores (D2) e medir taxa de sucesso com Groq real antes de investir em refinamento; manter conversas em sessão (D3 = não persistir) até haver pedido real de auditoria/continuidade.
 
 ### 4.3 Trigger da typed table (ADR 0002, Fase 3)
+
 **Fonte:** ADR 0002 · Gatilho: p95 > 300 ms (ou plano de execução lento) em produção no dataset de referência. **Ação [Proposta]:** instrumentar a medição no ambiente real (cota paga / dados reais) e registrar baseline; essa medição decide se E (campos calculados) deve considerar materialização.
 
 ### 4.4 Deploy de produção nunca validado
+
 **Fonte:** README/runbooks · `docker-compose.prod.yml` nunca foi executado. **Ação [Proposta]:** antes de empilhar features novas, executar o runbook em VPS de teste (deploy, backup, restore, rotação de segredos) e registrar evidência — qualquer feature nova herda o risco operacional de base.
 
 ### 4.5 Spike TV em hardware real (24 h)
+
 **Fonte:** `docs/runbooks/tv-kiosk.md` (Spike B) · **Ação [Proposta]:** validar estabilidade, memória e reconexão em TV real por 24 h — independente de features, mas informa A (frescor na TV já exibe badge).
 
 ## 5. Faseamento recomendado

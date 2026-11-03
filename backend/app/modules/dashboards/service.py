@@ -316,7 +316,9 @@ async def effective_spec(session: AsyncSession, p: Principal, w: Widget, period:
     fields = await executor.load_fields(session, ds.id)
     guard_pii_filters(filters, fields, p)
     spec = QuerySpec.model_validate(w.query_config)
-    if spec.period is None and ds.time_field and default_period and not (period and (w.follows_global_period or force_period)):
+    follows = w.follows_global_period or force_period
+    # quem segue a dashboard usa o periodo escolhido; sem escolha, o padrao da dashboard (e nao o proprio gravado no widget)
+    if ds.time_field and default_period and not (period and follows) and (spec.period is None or follows):
         spec = spec.model_copy(update={"period": Period(mode="relative", preset=default_period)})  # type: ignore[arg-type]
     spec, ignored = _apply_overrides(w, spec, period, filters, fields, ds.time_field, force_period)
     return ds, apply_group(w, spec, ov, fields, ds.time_field), ignored
