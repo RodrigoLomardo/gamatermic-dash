@@ -7,6 +7,8 @@ Plano técnico completo: [`.cursor/plans/plano_técnico_gamatermic_dash_f12dd096
 
 ## Rodando localmente
 
+Primeira vez, numa máquina sem nada instalado? Siga o [passo a passo de onboarding](docs/onboarding.md).
+
 Pré-requisitos: Python 3.12 + [uv](https://docs.astral.sh/uv/), Node 22, PostgreSQL 16+ (Docker **ou** instalação local).
 
 ```bash
